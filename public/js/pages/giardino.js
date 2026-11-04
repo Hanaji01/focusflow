@@ -79,25 +79,5 @@ function render() {
     document.getElementById('note').hidden = days.length > 0;
 }
 
-document.getElementById('logout').addEventListener('click', () => FF.session.logout());
-
-const accountBtn = document.getElementById('account-btn');
-const accountMenu = document.getElementById('account-menu');
-
-function toggleAccount(open) {
-    accountMenu.hidden = !open;
-    accountBtn.setAttribute('aria-expanded', String(open));
-}
-
-accountBtn.addEventListener('click', () => {
-    toggleAccount(accountMenu.hidden);
-    if (!accountMenu.hidden) accountMenu.querySelector('a').focus();
-});
-document.addEventListener('click', (e) => { if (!e.target.closest('#account')) toggleAccount(false); });
-document.addEventListener('keydown', (e) => {
-    if (e.key !== 'Escape' || accountMenu.hidden) return;
-    toggleAccount(false);
-    accountBtn.focus();
-});
 window.addEventListener('ff:change', render);
 render();

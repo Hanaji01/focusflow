@@ -526,6 +526,7 @@ export const ICONS = {
     check: svg('<path d="M5 12.5l4.5 4.5L19 7.5"/>', 3),
     close: svg('<path d="M6 6l12 12M18 6L6 18"/>'),
     edit: svg('<path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13 7l4 4"/>'),
+    user: svg('<circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/>', 1.9),
     spark: svg('<path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2L12 3z"/>')
 };
 
@@ -845,6 +846,38 @@ function buildEditSheet() {
     });
 }
 
+/* Icona tonda in alto a destra, con il menu dell'account */
+function mountAccount() {
+    const wrap = document.createElement('div');
+    wrap.className = 'ff-account';
+    wrap.innerHTML = `
+      <button class="ff-account-btn" type="button" aria-label="Menu account" aria-haspopup="true" aria-expanded="false" aria-controls="ff-account-menu">${ICONS.user}</button>
+      <div class="ff-account-menu" id="ff-account-menu" hidden>
+        <a href="account.html">Account</a>
+        <button type="button" data-logout>Esci dall'account</button>
+      </div>`;
+    document.querySelector('.ff-app').prepend(wrap);
+
+    const btn = wrap.querySelector('.ff-account-btn');
+    const menu = wrap.querySelector('.ff-account-menu');
+    const toggle = (open) => {
+        menu.hidden = !open;
+        btn.setAttribute('aria-expanded', String(open));
+    };
+
+    btn.addEventListener('click', () => {
+        toggle(menu.hidden);
+        if (!menu.hidden) menu.querySelector('a').focus();
+    });
+    wrap.querySelector('[data-logout]').addEventListener('click', () => session.logout());
+    document.addEventListener('click', (e) => { if (!wrap.contains(e.target)) toggle(false); });
+    document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape' || menu.hidden) return;
+        toggle(false);
+        btn.focus();
+    });
+}
+
 export function mountNav(active) {
     const link = (key, text, href) =>
         `<a href="${href}" ${active === key ? 'aria-current="page"' : ''}>${ICONS[key]}<span>${text}</span></a>`;
@@ -862,5 +895,6 @@ export function mountNav(active) {
 
     buildSheet();
     buildEditSheet();
+    mountAccount();
     nav.querySelector('.ff-fab').addEventListener('click', openSheet);
 }
