@@ -237,6 +237,14 @@ export const auth = {
         if (mode !== 'api') throw new Error('La registrazione richiede il server');
         const { token, user } = await http('POST', '/auth/register', { username, password });
         session.set(user.username, token);
+    },
+    async changePassword(current, next) {
+        const { token, user } = await http('POST', '/auth/password', { current, next });
+        session.set(user.username, token);
+    },
+    async deleteAccount(password) {
+        await http('DELETE', '/auth/account', { password });
+        session.clear();
     }
 };
 

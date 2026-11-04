@@ -343,6 +343,11 @@ body {
 @keyframes ff-cat-walk { from { transform: translateX(-130px); } }
 @keyframes ff-cat-steps { 50% { transform: translateY(-3px); } }
 
+/* ---------- Pagina Account ---------- */
+.ff-card { background: var(--card); border-radius: 12px; padding: 4px 14px 14px; box-shadow: 0 1px 2px rgba(60, 50, 40, 0.06), 0 4px 12px rgba(60, 50, 40, 0.05); }
+.ff-card-note { font-size: 13px; color: var(--muted); margin: 12px 0 0; }
+.ff-form-error { min-height: 18px; margin: 8px 0; font-size: 12px; color: var(--danger); }
+
 /* ---------- Avviso fisso in cima alla pagina ---------- */
 .ff-banner {
     margin: 0 0 14px; padding: 10px 14px; border-radius: 10px;

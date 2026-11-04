@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>FocusFlow — Account</title>
+    <link rel="stylesheet" href="focusflow.css">
+</head>
+<body>
+    <main class="ff-app">
+        <p class="ff-kicker">Il tuo</p>
+        <h1 class="ff-title">Account</h1>
+        <p class="ff-sub" id="who"></p>
+
+        <p class="ff-empty" id="demo" hidden>Nella modalità demo non c'è un account da gestire.</p>
+
+        <div id="panels" hidden>
+            <h2 class="ff-section">Cambia password</h2>
+            <form class="ff-card" id="password-form" novalidate>
+                <label class="ed-field"><span>Password attuale</span><input id="current" type="password" autocomplete="current-password" required></label>
+                <label class="ed-field"><span>Nuova password (almeno 8 caratteri)</span><input id="next" type="password" autocomplete="new-password" required></label>
+                <label class="ed-field"><span>Ripeti la nuova password</span><input id="repeat" type="password" autocomplete="new-password" required></label>
+                <p class="ff-form-error" id="password-error" role="alert"></p>
+                <button class="btn" type="submit">Cambia password</button>
+            </form>
+
+            <h2 class="ff-section">Elimina account</h2>
+            <form class="ff-card" id="delete-form" novalidate>
+                <p class="ff-card-note">Cancella l'account, tutti i task e il giardino. Non si può annullare.</p>
+                <label class="ed-field"><span>Password attuale</span><input id="delete-password" type="password" autocomplete="current-password" required></label>
+                <p class="ff-form-error" id="delete-error" role="alert"></p>
+                <button class="btn ghost" type="submit">Elimina account</button>
+            </form>
+        </div>
+    </main>
+
+    <script type="module" src="pages/account.js"></script>
+</body>
+</html>

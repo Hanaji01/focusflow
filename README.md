@@ -35,3 +35,5 @@ dalla cartella `public/` lancia `py -m http.server 8080` e apri http://localhost
 - Il fiore del giorno si ricalcola sul server a ogni modifica; le giornate passate sono chiuse (HTTP 409).
 - Ogni giorno nasce un solo fiore, con un petalo per ogni task completato. Tetto di 8 task per data (`MAX_TASKS_PER_DAY` in `server/lib/validate.js` e `public/app.js`): oltre, il server risponde 409.
 - Servire il sito in HTTPS se lo si pubblica: il token di accesso viaggia nell'intestazione Authorization.
+- Se il server sta dietro un proxy, impostare `TRUST_PROXY` in `.env`: i limiti ai tentativi si basano sull'IP del client.
+- I limiti ai tentativi stanno in memoria: si azzerano al riavvio e valgono per una sola istanza del server.
