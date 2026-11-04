@@ -132,18 +132,35 @@ function withTimeout(promise, ms) {
     return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
 
-async function generate(system, user, maxTokens) {
-    await loadModel();
-    const id = nextId++;
-    return new Promise((resolve, reject) => {
-        pending.set(id, { resolve, reject });
-        worker.postMessage({
-            type: 'generate',
-            id,
-            maxTokens,
-            messages: [{ role: 'system', content: system }, { role: 'user', content: user }]
+/* Allo scadere del tempo la richiesta esce dalla coda del worker, così non rallenta le successive */
+async function generate(system, user, maxTokens, ms) {
+    let id = null;
+    let expired = false;
+    const run = (async () => {
+        await loadModel();
+        if (expired) throw new Error('tempo scaduto');
+        id = nextId++;
+        return new Promise((resolve, reject) => {
+            pending.set(id, { resolve, reject });
+            worker.postMessage({
+                type: 'generate',
+                id,
+                maxTokens,
+                messages: [{ role: 'system', content: system }, { role: 'user', content: user }]
+            });
         });
-    });
+    })();
+    run.catch(() => {});
+    try {
+        return await withTimeout(run, ms);
+    } catch (err) {
+        expired = true;
+        if (id !== null) {
+            pending.delete(id);
+            worker?.postMessage({ type: 'cancel', id });
+        }
+        throw err;
+    }
 }
 
 /* Estrae un elenco di stringhe da una risposta che dovrebbe essere un array JSON */
@@ -216,7 +233,7 @@ export async function segment(text) {
     loadModel().catch(() => {}); // parte o prosegue in background
     const wait = status.state === 'ready' ? limits.readyMs : limits.loadingMs;
     try {
-        const list = parseList(await withTimeout(generate(SEGMENT_PROMPT, clean, 200), wait));
+        const list = parseList(await generate(SEGMENT_PROMPT, clean, 200, wait));
         const grounded = list.filter((s) => faithful(s, clean));
         if (grounded.length > 0 && grounded.length === list.length && list.length <= 8) {
             lastSegmentSource = 'modello';
@@ -361,7 +378,7 @@ export async function breakdown(title) {
     if (!modelAllowed()) return { items: breakdownTemplate(title), source: 'base' };
     try {
         const wait = status.state === 'ready' ? limits.readyMs : limits.breakdownWaitMs;
-        const items = parseList(await withTimeout(generate(BREAKDOWN_PROMPT, title, 150), wait)).slice(0, 5);
+        const items = parseList(await generate(BREAKDOWN_PROMPT, title, 150, wait)).slice(0, 5);
         if (items.length >= 2) return { items, source: 'modello' };
     } catch (err) {
         console.info(`[FocusFlow] sotto-attività con modello di base (${err.message})`);

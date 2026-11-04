@@ -51,8 +51,8 @@ function renderDay() {
     document.getElementById('day-sub').textContent = tasks.length === 0
         ? 'Nessun task per questo giorno'
         : `${tasks.length} task, ${done} ${done === 1 ? 'completato' : 'completati'}`;
-    // le spunte si modificano solo nella giornata di oggi
-    listEl.innerHTML = tasks.map((t) => FF.taskCardHTML(t, { readOnly: selected !== today })).join('');
+    // i giorni passati sono chiusi: oggi e i giorni futuri si possono completare
+    listEl.innerHTML = tasks.map((t) => FF.taskCardHTML(t, { readOnly: selected < today })).join('');
 }
 
 function render() { renderGrid(); renderDay(); }

@@ -21,6 +21,10 @@ function hash(str) {
    (x, y) = base dello stelo; stemH = altezza; petals = numero di petali.
    ------------------------------------------------------------ */
 function drawFlower(x, y, stemH, petals) {
+    if (FF.ART_READY) {
+        const size = 46;
+        return `<image href="${FF.flowerArt(petals)}" x="${x - size / 2}" y="${y - size}" width="${size}" height="${size}"/>`;
+    }
     const hy = y - stemH;
     return `
       <g>

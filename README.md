@@ -30,6 +30,11 @@ Per creare un utente da terminale: `npm run user:create -- nome password` (con `
 Se il server non risponde, il frontend funziona con dati d'esempio nel browser:
 dalla cartella `public/` lancia `py -m http.server 8080` e apri http://localhost:8080/login.html.
 
+## Disegni
+Fiori e gattino vanno in `public/img/`: `fiore-1.png` ... `fiore-8.png` (uno per numero di petali) e `gattino.png`.
+PNG con sfondo trasparente: fiori 1024×1024 con lo stelo dritto, centrato e appoggiato al bordo inferiore; gattino largo 1024, rivolto a destra, con la bocca libera.
+Quando ci sono tutti, impostare `ART_READY = true` in `public/app.js`.
+
 ## Note
 - Il modello AI (Qwen2.5-0.5B, ~780 MB) è facoltativo: si scarica solo con "Attiva IA avanzata" nel pannello "Nuovo task" e resta nella cache del browser, finché non lo disattivi. Senza modello l'analisi usa le regole di base.
 - Il fiore del giorno si ricalcola sul server a ogni modifica; le giornate passate sono chiuse (HTTP 409).

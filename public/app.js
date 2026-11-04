@@ -287,10 +287,13 @@ function checkLocalDelivery() {
 function showCat() {
     if (document.querySelector('.ff-cat')) return;
     const today = flowers().find((f) => f.date === todayISO());
+    const petals = today ? today.tasks.length : 0;
     const el = document.createElement('div');
     el.className = 'ff-cat';
     el.setAttribute('role', 'status');
-    el.innerHTML = `
+    const cat = ART_READY
+        ? `<span class="ff-cat-art" aria-hidden="true"><img src="img/gattino.png" alt=""><img src="${flowerArt(petals || 1)}" alt=""></span>`
+        : `
       <svg viewBox="0 0 120 84" aria-hidden="true">
         <path d="M24 52c-14-4-18-18-10-27" fill="none" stroke="var(--gold)" stroke-width="7" stroke-linecap="round"/>
         <g class="ff-cat-legs" stroke="var(--gold)" stroke-width="7" stroke-linecap="round">
@@ -303,8 +306,10 @@ function showCat() {
         <circle cx="96" cy="33" r="2" fill="var(--ink)"/>
         <path d="M90 39l-2 3M90 39l2 3" stroke="var(--ink)" stroke-width="1.5" stroke-linecap="round"/>
         <path d="M91 43L108 22" stroke="#90A970" stroke-width="2.5" stroke-linecap="round"/>
-        ${flowerHead(108, 22, today ? today.tasks.length : 0)}
-      </svg>
+        ${flowerHead(108, 22, petals)}
+      </svg>`;
+    el.innerHTML = `
+      ${cat}
       <p><strong>Consegna speciale!</strong>Hai finito tutto: il fiore di oggi è nel tuo giardino.</p>
       <button type="button">Grazie</button>`;
     el.querySelector('button').addEventListener('click', () => el.remove());
@@ -340,6 +345,11 @@ export function flowers() {
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([date, tasks]) => ({ date, tasks: tasks.slice(0, MAX_TASKS_PER_DAY) }));
 }
+
+/* Disegni in public/img: fiore-1.png ... fiore-8.png e gattino.png.
+   Da mettere a true quando ci sono tutti; fino ad allora si usano i segnaposto disegnati qui. */
+export const ART_READY = false;
+export const flowerArt = (n) => `img/fiore-${Math.min(n, MAX_TASKS_PER_DAY)}.png`;
 
 /* Corolla del fiore: n petali dall'alto in senso orario, con i colori della palette a rotazione */
 const PETAL_COLORS = ['--rose', '--lav', '--gold', '--blue', '--coral', '--green'];
