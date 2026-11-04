@@ -31,7 +31,7 @@ Se il server non risponde, il frontend funziona con dati d'esempio nel browser:
 dalla cartella `public/` lancia `py -m http.server 8080` e apri http://localhost:8080/login.html.
 
 ## Note
-- Al primo uso del modello AI (Qwen2.5-0.5B, ~780 MB) il browser lo scarica e lo tiene in cache; serve connessione.
+- Il modello AI (Qwen2.5-0.5B, ~780 MB) è facoltativo: si scarica solo con "Attiva IA avanzata" nel pannello "Nuovo task" e resta nella cache del browser, finché non lo disattivi. Senza modello l'analisi usa le regole di base.
 - Il fiore del giorno si ricalcola sul server a ogni modifica; le giornate passate sono chiuse (HTTP 409).
 - Ogni giorno nasce un solo fiore, con un petalo per ogni task completato. Tetto di 8 task per data (`MAX_TASKS_PER_DAY` in `server/lib/validate.js` e `public/app.js`): oltre, il server risponde 409.
 - Servire il sito in HTTPS se lo si pubblica: il token di accesso viaggia nell'intestazione Authorization.

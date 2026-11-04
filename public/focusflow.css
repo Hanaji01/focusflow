@@ -289,6 +289,11 @@ body {
 .rv-actions { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-top: 14px; }
 
 .ff-ai-status { min-height: 16px; margin: 10px 0 0; font-size: 11px; color: var(--muted); text-align: center; }
+.ff-ai-status button {
+    background: none; border: 0; padding: 0;
+    font: inherit; font-weight: 600; color: var(--ink);
+    cursor: pointer; text-decoration: underline; text-underline-offset: 2px;
+}
 
 /* ---------- Pannello "Modifica task" ---------- */
 .ed-field { display: block; margin-top: 12px; }

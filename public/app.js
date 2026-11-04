@@ -578,6 +578,7 @@ export function openSheet() {
         ? sheetEl.querySelector('textarea')
         : sheetEl.querySelector('.rv-title');
     if (first) first.focus();
+    getNlp().catch(() => {});   // mostra subito lo stato dell'IA avanzata
 }
 
 export function closeSheet() {
@@ -615,9 +616,11 @@ export function openEdit(id) {
 function renderStatus(s) {
     const el = sheetEl && sheetEl.querySelector('.ff-ai-status');
     if (!el) return;
-    if (s.state === 'loading') el.textContent = `Modello IA in caricamento… ${s.progress}%`;
-    else if (s.state === 'failed') el.textContent = 'Modello IA non disponibile: uso le regole di base.';
-    else el.textContent = '';
+    const action = (name, text) => `<button type="button" data-ai="${name}">${text}</button>`;
+    if (s.state === 'off') el.innerHTML = `${action('on', 'Attiva IA avanzata')}: circa 780 MB da scaricare, meglio in Wi-Fi`;
+    else if (s.state === 'loading') el.innerHTML = `Modello IA in caricamento… ${s.progress}% ${action('off', 'Annulla')}`;
+    else if (s.state === 'failed') el.innerHTML = `Modello IA non disponibile: uso le regole di base. ${action('on', 'Riprova')}`;
+    else el.innerHTML = `IA avanzata attiva ${action('off', 'Disattiva')}`;
 }
 
 function buildSheet() {
@@ -720,6 +723,14 @@ function buildSheet() {
 
     list.addEventListener('change', (e) => { if (e.target.closest('.rv-inc')) updateCount(); });
 
+    q('.ff-ai-status').addEventListener('click', async (e) => {
+        const btn = e.target.closest('[data-ai]');
+        if (!btn) return;
+        const nlp = await getNlp();
+        if (btn.dataset.ai === 'on') nlp.enableModel();
+        else nlp.disableModel();
+    });
+
     list.addEventListener('click', async (e) => {
         const btn = e.target.closest('.rv-sub-btn');
         if (!btn) return;
@@ -735,7 +746,7 @@ function buildSheet() {
         subs.hidden = false;
         const note = li.querySelector('.rv-note');
         note.hidden = source !== 'base';
-        note.textContent = 'Suggerimenti generici: il modello IA non era ancora pronto.';
+        note.textContent = "Suggerimenti generici: l'IA avanzata non è attiva o non è ancora pronta.";
         btn.hidden = true;
     });
 

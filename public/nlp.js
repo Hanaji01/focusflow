@@ -6,15 +6,18 @@
    - Priorità                    regole (il modello zero-shot è previsto in una fase successiva)
    - Sotto-attività              modello, altrimenti modello di testo generico
 
-   Il modello (Qwen2.5-0.5B-Instruct, ~780 MB) si scarica una sola volta e resta nella cache
-   del browser. Parte solo quando serve e non blocca mai l'interfaccia: se non è pronto in
-   pochi secondi si usano le regole, e il download prosegue in background. */
+   Il modello (Qwen2.5-0.5B-Instruct, ~780 MB) si scarica solo se l'utente lo attiva dal pannello
+   "Nuovo task", poi resta nella cache del browser. Gira in nlp-worker.js, quindi non blocca
+   l'interfaccia: se non è attivo o non è pronto in pochi secondi si usano le regole. */
 
 import { todayISO, addDaysISO, toISO, track } from './app.js';
 
 const CHRONO_URL = 'https://cdn.jsdelivr.net/npm/chrono-node@2.10.1/dist/esm/index.js';
 const TRANSFORMERS_URL = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.1';
 export const MODEL_ID = 'onnx-community/Qwen2.5-0.5B-Instruct';
+const MODEL_DTYPE = 'q4';
+const KEY_MODEL = 'ff_ai_model';
+const MODEL_CACHE = 'transformers-cache';   // cache del browser usata da Transformers.js
 
 /* Tempi massimi (ms) */
 export const limits = {
@@ -27,7 +30,12 @@ export const limits = {
    Stato del modello
    ============================================================ */
 const listeners = new Set();
-let status = { state: 'idle', progress: 0 };
+
+export function modelAllowed() {
+    try { return localStorage.getItem(KEY_MODEL) === 'on'; } catch (e) { return false; }
+}
+
+let status = { state: modelAllowed() ? 'idle' : 'off', progress: 0 };
 
 export const getStatus = () => status;
 export function onStatus(fn) {
@@ -41,47 +49,82 @@ function setStatus(next) {
 }
 
 let modelPromise = null;
+let worker = null;
+let nextId = 1;
+const pending = new Map();   // richieste in attesa di risposta dal worker
+
+function rejectPending(reason) {
+    pending.forEach(({ reject }) => reject(new Error(reason)));
+    pending.clear();
+}
 
 export function loadModel() {
     if (modelPromise) return modelPromise;
+    if (!modelAllowed()) return Promise.reject(new Error('modello non attivo'));
 
-    const files = new Map();
     const t0 = performance.now();
     setStatus({ state: 'loading', progress: 0 });
+    const current = new Worker(new URL('./nlp-worker.js', import.meta.url), { type: 'module' });
+    worker = current;
 
-    modelPromise = import(TRANSFORMERS_URL)
-        .then(({ pipeline }) => pipeline('text-generation', MODEL_ID, {
-            dtype: 'q4',
-            progress_callback: (p) => {
-                if (p.status !== 'progress' || !p.total) return;
-                files.set(p.file, { loaded: p.loaded, total: p.total });
-                let loaded = 0;
-                let total = 0;
-                files.forEach((f) => { loaded += f.loaded; total += f.total; });
-                setStatus({ state: 'loading', progress: Math.min(99, Math.round((loaded / total) * 100)) });
-            }
-        }))
-        .then((generator) => {
-            const ms = Math.round(performance.now() - t0);
-            console.info(`[FocusFlow][telemetria] modello "${MODEL_ID}" pronto in ${ms} ms`);
-            track('model_load_ms', ms, {
-                model: MODEL_ID,
-                webgpu: 'gpu' in navigator,
-                device_memory_gb: navigator.deviceMemory ?? null,
-                heap_mb: performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) : null
-            });
-            setStatus({ state: 'ready', progress: 100 });
-            return generator;
-        })
-        .catch((err) => {
-            console.warn('[FocusFlow] modello non disponibile, si usano le regole di base.', err);
+    modelPromise = new Promise((resolve, reject) => {
+        const fail = (reason) => {
+            console.warn('[FocusFlow] modello non disponibile, si usano le regole di base.', reason);
             track('model_load_failed', Math.round(performance.now() - t0), { model: MODEL_ID });
+            current.terminate();
+            worker = null;
+            rejectPending('modello non disponibile');
             setStatus({ state: 'failed', progress: 0 });
-            throw err;
-        });
+            reject(new Error('modello non disponibile'));
+        };
 
+        current.addEventListener('error', (e) => fail(e.message));
+        current.addEventListener('message', ({ data }) => {
+            if (data.type === 'progress') {
+                setStatus({ state: 'loading', progress: data.progress });
+            } else if (data.type === 'ready') {
+                const ms = Math.round(performance.now() - t0);
+                console.info(`[FocusFlow][telemetria] modello "${MODEL_ID}" pronto in ${ms} ms (${data.device})`);
+                track('model_load_ms', ms, {
+                    model: MODEL_ID,
+                    device: data.device,
+                    device_memory_gb: navigator.deviceMemory ?? null
+                });
+                setStatus({ state: 'ready', progress: 100 });
+                resolve();
+            } else if (data.type === 'failed') {
+                fail(data.error);
+            } else if (data.type === 'result' || data.type === 'error') {
+                const request = pending.get(data.id);
+                if (!request) return;
+                pending.delete(data.id);
+                if (data.type === 'result') request.resolve(data.text);
+                else request.reject(new Error(data.error));
+            }
+        });
+    });
+
+    current.postMessage({ type: 'load', url: TRANSFORMERS_URL, model: MODEL_ID, dtype: MODEL_DTYPE });
     modelPromise.catch(() => {}); // il fallimento è già gestito: evita l'avviso "unhandled rejection"
     return modelPromise;
+}
+
+/* Scelta dell'utente: attiva il modello e avvia il download */
+export function enableModel() {
+    try { localStorage.setItem(KEY_MODEL, 'on'); } catch (e) { /* vale solo per questa pagina */ }
+    if (status.state === 'failed') modelPromise = null;
+    return loadModel().catch(() => {});
+}
+
+/* Scelta dell'utente: interrompe il download e libera lo spazio occupato */
+export async function disableModel() {
+    try { localStorage.removeItem(KEY_MODEL); } catch (e) { /* ignora */ }
+    if (worker) worker.terminate();
+    worker = null;
+    modelPromise = null;
+    rejectPending('modello disattivato');
+    setStatus({ state: 'off', progress: 0 });
+    try { await caches.delete(MODEL_CACHE); } catch (e) { /* cache non disponibile */ }
 }
 
 function withTimeout(promise, ms) {
@@ -91,12 +134,17 @@ function withTimeout(promise, ms) {
 }
 
 async function generate(system, user, maxTokens) {
-    const generator = await loadModel();
-    const out = await generator(
-        [{ role: 'system', content: system }, { role: 'user', content: user }],
-        { max_new_tokens: maxTokens, do_sample: false }
-    );
-    return out?.[0]?.generated_text?.at(-1)?.content ?? '';
+    await loadModel();
+    const id = nextId++;
+    return new Promise((resolve, reject) => {
+        pending.set(id, { resolve, reject });
+        worker.postMessage({
+            type: 'generate',
+            id,
+            maxTokens,
+            messages: [{ role: 'system', content: system }, { role: 'user', content: user }]
+        });
+    });
 }
 
 /* Estrae un elenco di stringhe da una risposta che dovrebbe essere un array JSON */
@@ -163,6 +211,8 @@ export async function segment(text) {
 
     // Frase breve con una sola azione: il modello non serve (e non si scarica)
     if (heuristic.length <= 1 && wordCount(clean) < 12) return heuristic;
+
+    if (!modelAllowed()) return heuristic;   // il download parte solo con il consenso dell'utente
 
     loadModel().catch(() => {}); // parte o prosegue in background
     const wait = status.state === 'ready' ? limits.readyMs : limits.loadingMs;
@@ -330,6 +380,7 @@ function breakdownTemplate(title) {
 
 /* Restituisce { items, source }: 'modello' oppure 'base' se il modello non era pronto */
 export async function breakdown(title) {
+    if (!modelAllowed()) return { items: breakdownTemplate(title), source: 'base' };
     try {
         const wait = status.state === 'ready' ? limits.readyMs : limits.breakdownWaitMs;
         const items = parseList(await withTimeout(generate(BREAKDOWN_PROMPT, title, 150), wait)).slice(0, 5);

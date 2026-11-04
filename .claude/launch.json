@@ -4,8 +4,23 @@
     {
       "name": "focusflow-demo",
       "runtimeExecutable": "py",
-      "runtimeArgs": ["-m", "http.server", "8765", "--directory", "public"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8765",
+        "--directory",
+        "public"
+      ],
       "port": 8765
+    },
+    {
+      "name": "focusflow-api",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "--env-file=server/.env",
+        "server/server.js"
+      ],
+      "port": 3000
     }
   ]
 }
