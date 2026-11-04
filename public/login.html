@@ -73,12 +73,12 @@
 
             <label class="field">
                 <span>Utente</span>
-                <input id="user" name="user" type="text" autocomplete="username" autocapitalize="none" required>
+                <input id="user" type="text" autocomplete="username" autocapitalize="none" required>
             </label>
 
             <label class="field">
                 <span>Password</span>
-                <input id="password" name="password" type="password" autocomplete="current-password" required>
+                <input id="password" type="password" autocomplete="current-password" required>
             </label>
 
             <p class="login-error" id="login-error" role="alert"></p>
@@ -97,12 +97,6 @@
         const switcher = document.getElementById('switch-mode');
         let registering = false;
 
-        await FF.init();
-        if (FF.session.ok()) location.replace('oggi.html');   // già autenticato
-
-        if (FF.getMode() === 'api') switcher.hidden = false;
-        else document.getElementById('demo-note').hidden = false;
-
         function setMode(register) {
             registering = register;
             submit.textContent = register ? 'Crea account' : 'Accedi';
@@ -112,6 +106,7 @@
         }
         switcher.addEventListener('click', () => setMode(!registering));
 
+        // Collegato prima di attendere il server: un invio immediato non deve diventare un invio nativo del form
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const user = document.getElementById('user').value.trim();
@@ -121,6 +116,7 @@
             submit.disabled = true;
             error.textContent = '';
             try {
+                await FF.init();
                 if (registering) await FF.auth.register(user, password);
                 else await FF.auth.login(user, password);
                 location.href = 'oggi.html';
@@ -129,6 +125,12 @@
                 submit.disabled = false;
             }
         });
+
+        await FF.init();
+        if (FF.session.ok()) location.replace('oggi.html');   // già autenticato
+
+        if (FF.getMode() === 'api') switcher.hidden = false;
+        else document.getElementById('demo-note').hidden = false;
     </script>
 </body>
 </html>

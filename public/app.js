@@ -88,6 +88,7 @@ const KEY_TOKEN = 'ff_token';
 let mode = 'local';
 let cache = [];
 let initPromise = null;
+let loadFailed = false;    // sessione valida ma task non caricati dal server
 
 export const getMode = () => mode;
 
@@ -186,10 +187,13 @@ export function init() {
                 else if (res.status === 503) { mode = 'api'; toast('Il database non è raggiungibile'); }
             } catch (e) { /* nessun server: si resta in modalità demo */ }
 
+            // Chi ha una sessione vera non deve mai finire sui dati d'esempio
+            if (mode === 'local' && session.token()) mode = 'api';
+
             if (mode === 'api') {
                 if (session.token()) {
                     try { cache = await http('GET', '/tasks'); }
-                    catch (err) { toast('Impossibile caricare i task: ' + err.message); }
+                    catch (err) { loadFailed = true; }
                 }
             } else {
                 loadLocal();
@@ -207,7 +211,19 @@ export async function boot(active) {
         await new Promise(() => {}); // la pagina sta cambiando: si ferma qui
     }
     mountNav(active);
+    if (loadFailed) showLoadError();
     syncFlowerSoon();
+}
+
+function showLoadError() {
+    const el = document.createElement('p');
+    el.className = 'ff-banner';
+    el.setAttribute('role', 'alert');
+    el.innerHTML = 'Non riesco a caricare i tuoi task: il server non risponde. <button type="button">Riprova</button>';
+    el.querySelector('button').addEventListener('click', () => location.reload());
+    const app = document.querySelector('.ff-app');
+    app.classList.add('ff-load-failed');
+    app.prepend(el);
 }
 
 export const auth = {
@@ -616,6 +632,7 @@ function buildSheet() {
         drafts = items;
         const cats = Object.entries(CATEGORIES).map(([k, v]) => [k, v.label]);
         const prios = PRIORITIES.map((p) => [p, p]);
+        const types = [['evento', 'Evento'], ['scadenza', 'Scadenza']];
         list.innerHTML = items.map((d, i) => `
           <li class="rv-item" data-i="${i}">
             <div class="rv-head">
@@ -625,6 +642,7 @@ function buildSheet() {
             <div class="rv-fields">
               <select class="rv-cat" aria-label="Categoria">${options(cats, d.category)}</select>
               <select class="rv-prio" aria-label="Priorità">${options(prios, d.priority)}</select>
+              <select class="rv-type" aria-label="Tipo">${options(types, d.type)}</select>
               <input class="rv-date" type="date" value="${d.date}" aria-label="Data">
             </div>
             <button class="rv-sub-btn" type="button">+ Suggerisci sotto-attività</button>
@@ -689,7 +707,7 @@ function buildSheet() {
                     title,
                     category: li.querySelector('.rv-cat').value,
                     priority: li.querySelector('.rv-prio').value,
-                    type: d.type,
+                    type: li.querySelector('.rv-type').value,
                     date: li.querySelector('.rv-date').value || d.date,
                     subtasks: [...li.querySelectorAll('.rv-subs input:checked')]
                         .map((box) => box.parentElement.querySelector('span').textContent)

@@ -134,9 +134,13 @@ const SEGMENT_PROMPT =
     "Se il testo descrive una sola attività, restituisci un array con un solo elemento. " +
     'Non inventare nulla che non sia nel testo.';
 
+/* Nomi comuni che sembrano verbi all'infinito */
+const NOT_VERBS = 'pere|more|mare|sere|cere|fiere|lire|zanzare|chitarre|bandiere|tastiere|barriere';
+
 const BOUNDARY = new RegExp(
     '\\s*(?:[.;!?]|,|(?<!\\p{L})(?:e poi|e|ed|poi|inoltre)(?!\\p{L}))\\s+' +
     '(?=(?:devo|dovrei|vorrei|voglio|bisogna|ricordati|ricordarmi|ricordami|poi|anche)(?!\\p{L})|' +
+    `(?!(?:${NOT_VERBS})(?!\\p{L}))` +
     '\\p{L}+(?:are|ere|ire|arre|orre|urre)(?:mi|ti|lo|la|li|le|ci|si|ne)?(?!\\p{L}))',
     'giu'
 );
@@ -245,7 +249,7 @@ export function classifyType(text) {
 }
 
 const HIGH = `${L}(?:urgente|urgentissimo|subito|asap|importante|fondamentale|critico|il prima possibile|priorità alta)${R}`;
-const LOW = `${L}(?:non urgente|con calma|quando ho tempo|se possibile|eventualmente|prima o poi|nessuna fretta|priorità bassa)${R}`;
+const LOW = `${L}(?:non (?:è |e )?(?:urgente|importante)|con calma|quando ho tempo|se possibile|eventualmente|prima o poi|nessuna fretta|priorità bassa)${R}`;
 
 export function classifyPriority(text) {
     if (new RegExp(LOW, 'iu').test(text)) return 'bassa';
@@ -254,9 +258,9 @@ export function classifyPriority(text) {
 }
 
 const CATEGORY_RULES = [
-    ['salute', 'dentist|medic|yoga|palestr|visita|corsa|allenament|farmac|analisi|dottor|fisioterap|dieta|nuoto'],
+    ['salute', 'dentist|medic|yoga|palestr|visita|corsa|allenament|farmac|analisi (?:del sangue|medic|clinic)|dottor|fisioterap|dieta|nuoto'],
     ['studio', 'studi|legg|esam|lezion|tesi|libro|ripass|capitol|appunt|universit|corso|compit|relator|laure'],
-    ['lavoro', 'riunion|present|relazion|client|report|mail|progett|uffic|collega|fattur|preventiv|codice|meeting|call'],
+    ['lavoro', 'riunion|present|relazion|client|report|mail|progett|uffic|collega|fattur|preventiv|codice|meeting|call|analisi'],
     ['casa', 'spesa|bollett|pulir|pulizi|frutta|verdur|cucin|bucato|lavatric|idraulic|ripar|affitt|condomin|cena|supermerc']
 ];
 
@@ -270,7 +274,7 @@ export function classifyCategory(text) {
 /* ============================================================
    Titolo pulito: senza data, parole di priorità e formule come "devo"
    ============================================================ */
-const PRIORITY_WORDS = new RegExp(`${L}(?:non urgente|urgentissimo|urgente|subito|asap|importante|fondamentale|critico|il prima possibile|priorità alta|priorità bassa|con calma|quando ho tempo|se possibile|prima o poi)${R}`, 'giu');
+const PRIORITY_WORDS = new RegExp(`${L}(?:non (?:è |e )?(?:urgente|importante)|urgentissimo|urgente|subito|asap|importante|fondamentale|critico|il prima possibile|priorità alta|priorità bassa|con calma|quando ho tempo|se possibile|prima o poi)${R}`, 'giu');
 const LEADING = /^(?:(?:devo ancora|devo|dovrei|dovrò|vorrei|voglio|bisogna|bisognerebbe|ricordati di|ricordarmi di|ricordami di|non dimenticare di|e poi|poi|prima|dopo|inoltre|anche|e|ed)\s+)+/iu;
 const TRAILING = /(?:\s+(?:entro|per|il|lo|la|l'|di|a|alle|alla|nel|in|da|e|ed|tra|fra|su))+[\s,.;:!?-]*$/iu;
 
@@ -291,14 +295,22 @@ export async function analyze(text) {
     const segments = await segment(text);
     const chrono = await getChrono();
     track('nlp_analyze_ms', Math.round(performance.now() - t0), { source: lastSegmentSource, segments: segments.length });
+
+    // "Domani X e Y": la data vale anche per i task seguenti.
+    // "Urgente: X e Y": la priorità in apertura vale per tutti, quella detta a metà solo per il suo task.
+    const opening = new RegExp(`^\\s*(?:${LOW}|${HIGH})`, 'iu');
+    const sharedPriority = opening.test(segments[0]) ? classifyPriority(segments[0]) : null;
+    let lastDate = null;
+
     return segments.map((seg) => {
         const { iso, matched } = extractDate(seg, chrono);
+        if (iso) lastDate = iso;
         return {
             title: cleanTitle(seg, matched),
             category: classifyCategory(seg),
-            priority: classifyPriority(seg),
+            priority: sharedPriority || classifyPriority(seg),
             type: classifyType(seg),
-            date: iso || todayISO(),
+            date: lastDate || todayISO(),
             subtasks: []
         };
     }).filter((d) => d.title);

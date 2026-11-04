@@ -283,6 +283,21 @@ body {
 
 .ff-ai-status { min-height: 16px; margin: 10px 0 0; font-size: 11px; color: var(--muted); text-align: center; }
 
+/* ---------- Avviso fisso in cima alla pagina ---------- */
+.ff-banner {
+    margin: 0 0 14px; padding: 10px 14px; border-radius: 10px;
+    background: var(--card); border-left: 3px solid var(--coral);
+    font-size: 13px; line-height: 1.35;
+}
+.ff-banner button {
+    background: none; border: 0; padding: 0; margin-left: 4px;
+    font: inherit; font-weight: 600; color: var(--ink);
+    cursor: pointer; text-decoration: underline; text-underline-offset: 2px;
+}
+
+/* Task non caricati: niente "Giornata libera" o conteggi a zero, che sarebbero falsi */
+.ff-load-failed .ff-empty, .ff-load-failed .ff-sub { display: none; }
+
 /* ---------- Messaggio breve in basso ---------- */
 .ff-toast {
     position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 96px);
