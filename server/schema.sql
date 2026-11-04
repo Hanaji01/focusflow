@@ -13,9 +13,9 @@ CREATE TABLE IF NOT EXISTS tasks (
   id         BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   user_id    INT UNSIGNED NOT NULL,
   title      VARCHAR(200) NOT NULL,
-  category   ENUM('lavoro','casa','studio','salute','personale') NOT NULL DEFAULT 'personale',
+  category   ENUM('lavoro','casa','studio','salute','personale') NOT NULL DEFAULT 'personale',  -- non più usata dall'app
   priority   ENUM('alta','media','bassa') NOT NULL DEFAULT 'media',
-  task_type  ENUM('evento','scadenza') NOT NULL DEFAULT 'evento',
+  task_type  ENUM('evento','scadenza') NOT NULL DEFAULT 'evento',                               -- non più usata dall'app
   due_date   DATE NOT NULL,
   created_on DATE NOT NULL,
   done       TINYINT(1) NOT NULL DEFAULT 0,

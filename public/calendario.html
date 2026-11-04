@@ -24,7 +24,10 @@
         .cal-day[aria-current="date"] { color: var(--accent); font-weight: 700; }
         .cal-day[aria-pressed="true"] { background: rgba(168, 160, 217, 0.18); }
         .dots { display: flex; gap: 3px; height: 5px; }
-        .dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--c); }
+        .dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+        .dots i[data-p="alta"]  { background: var(--coral); }
+        .dots i[data-p="media"] { background: var(--gold); }
+        .dots i[data-p="bassa"] { background: var(--green); }
         .dots i.done { opacity: 0.35; }
 
         .back-link {

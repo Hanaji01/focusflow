@@ -18,15 +18,14 @@ function hash(str) {
 
 /* ------------------------------------------------------------
    Disegno del fiore — punto unico da sostituire con la tua grafica.
-   (x, y) = base dello stelo; stemH = altezza; tasks = i task completati,
-   un petalo per task nel colore della sua categoria (dall'alto, in senso orario).
+   (x, y) = base dello stelo; stemH = altezza; petals = numero di petali.
    ------------------------------------------------------------ */
-function drawFlower(x, y, stemH, tasks) {
+function drawFlower(x, y, stemH, petals) {
     const hy = y - stemH;
     return `
       <g>
         <line x1="${x}" y1="${y}" x2="${x}" y2="${hy}" stroke="#90A970" stroke-width="3"/>
-        ${FF.flowerHead(x, hy, tasks)}
+        ${FF.flowerHead(x, hy, petals)}
       </g>`;
 }
 
@@ -54,7 +53,7 @@ function scene(days) {
         group.forEach((day, i) => {
             const x = W / 2 + (i - (group.length - 1) / 2) * spacing;
             const y = r * ROW_H + STRIP_TOP + 4;
-            flowers += drawFlower(Math.round(x * 10) / 10, y, 34 + hash(day.date) * 44, day.tasks);
+            flowers += drawFlower(Math.round(x * 10) / 10, y, 34 + hash(day.date) * 44, day.tasks.length);
         });
     }
 

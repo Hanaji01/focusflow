@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { pool, withTransaction } from '../db.js';
 import {
-  CATEGORIES, PRIORITIES, TYPES, MAX_TASKS_PER_DAY, httpError, isISODate, cleanText, oneOf, dateField, idParam, addDays, serverToday
+  PRIORITIES, MAX_TASKS_PER_DAY, httpError, isISODate, cleanText, oneOf, dateField, idParam, addDays, serverToday
 } from '../lib/validate.js';
 
 export const tasksRouter = Router();
@@ -13,9 +13,7 @@ function shape(t, subs) {
   return {
     id: String(t.id),
     title: t.title,
-    category: t.category,
     priority: t.priority,
-    type: t.task_type,
     date: t.due_date,
     created: t.created_on,
     done: !!t.done,
@@ -59,9 +57,7 @@ tasksRouter.get('/', async (req, res) => {
 tasksRouter.post('/', async (req, res) => {
   const b = req.body || {};
   const title = cleanText(b.title, 'Titolo');
-  const category = oneOf(b.category ?? 'personale', CATEGORIES, 'Categoria');
   const priority = oneOf(b.priority ?? 'media', PRIORITIES, 'Priorità');
-  const type = oneOf(b.type ?? 'evento', TYPES, 'Tipo');
   const date = dateField(b.date, 'Data');
   const created = nearToday(b.created);
 
@@ -72,8 +68,8 @@ tasksRouter.post('/', async (req, res) => {
   const id = await withTransaction(async (conn) => {
     await assertDayHasRoom(conn, req.user.id, date);
     const [r] = await conn.execute(
-      'INSERT INTO tasks (user_id, title, category, priority, task_type, due_date, created_on) VALUES (?,?,?,?,?,?,?)',
-      [req.user.id, title, category, priority, type, date, created]);
+      'INSERT INTO tasks (user_id, title, priority, due_date, created_on) VALUES (?,?,?,?,?)',
+      [req.user.id, title, priority, date, created]);
     for (let i = 0; i < subs.length; i++) {
       await conn.execute('INSERT INTO subtasks (task_id, title, position) VALUES (?,?,?)', [r.insertId, subs[i], i]);
     }
@@ -94,9 +90,7 @@ tasksRouter.patch('/:id', async (req, res) => {
   if (!current) throw httpError(404, 'Task non trovato');
 
   if ('title' in b) { sets.push('title = ?'); args.push(cleanText(b.title, 'Titolo')); }
-  if ('category' in b) { sets.push('category = ?'); args.push(oneOf(b.category, CATEGORIES, 'Categoria')); }
   if ('priority' in b) { sets.push('priority = ?'); args.push(oneOf(b.priority, PRIORITIES, 'Priorità')); }
-  if ('type' in b) { sets.push('task_type = ?'); args.push(oneOf(b.type, TYPES, 'Tipo')); }
   if ('done' in b) {
     if (typeof b.done !== 'boolean') throw httpError(400, 'Valore "done" non valido');
     sets.push('done = ?', 'done_on = ?');

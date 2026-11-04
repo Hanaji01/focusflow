@@ -13,12 +13,11 @@ const GROUPS = [['alta', 'Priorità alta'], ['media', 'Priorità media'], ['bass
 
 function card(t) {
     return `
-      <article class="task" data-cat="${t.category}" data-id="${t.id}">
+      <article class="task" data-p="${t.priority}" data-id="${t.id}">
         <button class="task-check" type="button" data-check="${t.id}" aria-label="Segna come completato">${FF.ICONS.check}</button>
         <div class="task-body">
           <div class="task-title">${FF.esc(t.title)}</div>
           <div class="task-meta">
-            <span class="cat-label">${FF.CATEGORIES[t.category].label}</span>
             <span>Scaduto: ${FF.shortDate(t.date)}</span>
           </div>
           <div class="task-actions">

@@ -11,7 +11,6 @@ let selected = null; // nessun giorno aperto: la pagina parte come nel video
 const gridEl = document.getElementById('grid');
 const listEl = document.getElementById('day-list');
 const DOW = ['Lu', 'Ma', 'Me', 'Gi', 'Ve', 'Sa', 'Do'];
-const CAT_VAR = { lavoro: '--cat-lavoro', casa: '--cat-casa', studio: '--cat-studio', salute: '--cat-salute', personale: '--cat-personale' };
 
 function monthTitle() {
     const s = new Date(view.y, view.m, 1).toLocaleDateString('it-IT', { month: 'long', year: 'numeric' });
@@ -31,7 +30,7 @@ function renderGrid() {
         const iso = FF.toISO(new Date(view.y, view.m, d));
         const due = FF.dueOn(iso);
         const dots = due.slice(0, 3)
-            .map((t) => `<i class="${t.done ? 'done' : ''}" style="--c: var(${CAT_VAR[t.category]})"></i>`).join('');
+            .map((t) => `<i class="${t.done ? 'done' : ''}" data-p="${t.priority}"></i>`).join('');
         html += `<button type="button" class="cal-day" data-iso="${iso}"
                     aria-label="${FF.longDate(iso)}${due.length ? `, ${due.length} task` : ''}" aria-pressed="${iso === selected}"
                     ${iso === today ? 'aria-current="date"' : ''}>

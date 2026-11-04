@@ -44,17 +44,16 @@ router.put('/:date/sync', async (req, res) => {
       'SELECT * FROM flowers WHERE user_id = ? AND flower_date = ? FOR UPDATE', [req.user.id, date]);
 
     // Un petalo per ogni task completato quel giorno; restano da fare i task con quella data.
-    // Una scadenza lontana non pesa sui giorni precedenti: conta solo nella sua data o quando viene completata.
     const [due] = await conn.execute(
-      `SELECT task_type, due_date, done, done_on FROM tasks
+      `SELECT due_date, done, done_on FROM tasks
         WHERE user_id = ? AND deleted_at IS NULL AND (
           (done = 1 AND done_on = ?) OR (done = 0 AND due_date = ?))`,
       [req.user.id, date, date]);
 
     const total = due.length;
     const completed = due.filter((t) => t.done).length;
-    // Petali bonus: scadenze completate in questo giorno prima della data di scadenza
-    const bonus = due.filter((t) => t.task_type === 'scadenza' && t.done && t.done_on === date && t.due_date > date).length;
+    // Petali bonus: task completati in questo giorno prima della loro data
+    const bonus = due.filter((t) => t.done && t.due_date > date).length;
 
     const kind = rest === undefined ? flower.kind : (rest ? 'rest' : 'normal');
     const complete = kind === 'normal' && total > 0 && completed === total;

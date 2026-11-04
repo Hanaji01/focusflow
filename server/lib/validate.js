@@ -1,6 +1,4 @@
-export const CATEGORIES = ['lavoro', 'casa', 'studio', 'salute', 'personale'];
 export const PRIORITIES = ['alta', 'media', 'bassa'];
-export const TYPES = ['evento', 'scadenza'];
 export const MAX_TASKS_PER_DAY = 8;   // stesso valore in public/app.js: un petalo per task
 
 export function httpError(status, message) {

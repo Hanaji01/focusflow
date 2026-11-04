@@ -4,13 +4,6 @@
    - barra di navigazione e pannello "Nuovo task"
    Uso nelle pagine:  <script type="module"> import * as FF from './app.js'; ... </script> */
 
-export const CATEGORIES = {
-    lavoro:    { label: 'Lavoro' },
-    casa:      { label: 'Casa' },
-    studio:    { label: 'Studio' },
-    salute:    { label: 'Salute' },
-    personale: { label: 'Personale' }
-};
 export const PRIORITIES = ['alta', 'media', 'bassa'];
 export const MAX_TASKS_PER_DAY = 8;   // stesso valore in server/lib/validate.js: un petalo per task
 
@@ -51,7 +44,7 @@ export function esc(s) {
 
 /* ============================================================
    Dati — un task:
-   { id, title, category, priority, type: 'evento'|'scadenza',
+   { id, title, priority,
      date, created, done, doneOn, subtasks: [{ id, title, done }] }
    ============================================================ */
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -60,21 +53,21 @@ function seed() {
     const t = todayISO();
     const sub = (titles, doneCount) => titles.map((title, i) => ({ id: uid(), title, done: i < doneCount }));
     return [
-        { id: uid(), title: 'Preparare presentazione Q3', category: 'lavoro', priority: 'alta', type: 'evento',
+        { id: uid(), title: 'Preparare presentazione Q3', priority: 'alta',
           date: t, created: t, done: false, doneOn: null,
           subtasks: sub(['Raccogliere i dati', 'Creare le slide', 'Provare il discorso'], 1) },
-        { id: uid(), title: 'Comprare frutta e verdura', category: 'casa', priority: 'bassa', type: 'evento',
+        { id: uid(), title: 'Comprare frutta e verdura', priority: 'bassa',
           date: t, created: t, done: false, doneOn: null,
           subtasks: sub(['Fare la lista', 'Andare al mercato', 'Sistemare la spesa'], 0) },
-        { id: uid(), title: 'Leggere 30 pagine', category: 'studio', priority: 'media', type: 'evento',
+        { id: uid(), title: 'Leggere 30 pagine', priority: 'media',
           date: t, created: t, done: false, doneOn: null, subtasks: [] },
-        { id: uid(), title: 'Yoga mattutino', category: 'salute', priority: 'bassa', type: 'evento',
+        { id: uid(), title: 'Yoga mattutino', priority: 'bassa',
           date: t, created: t, done: true, doneOn: t, subtasks: [] },
-        { id: uid(), title: 'Chiamare il dentista', category: 'salute', priority: 'alta', type: 'evento',
+        { id: uid(), title: 'Chiamare il dentista', priority: 'alta',
           date: addDaysISO(t, -3), created: addDaysISO(t, -4), done: false, doneOn: null, subtasks: [] },
-        { id: uid(), title: 'Revisione codice collega', category: 'lavoro', priority: 'media', type: 'scadenza',
+        { id: uid(), title: 'Revisione codice collega', priority: 'media',
           date: addDaysISO(t, -2), created: addDaysISO(t, -5), done: false, doneOn: null, subtasks: [] },
-        { id: uid(), title: 'Pagare bolletta luce', category: 'casa', priority: 'media', type: 'scadenza',
+        { id: uid(), title: 'Pagare bolletta luce', priority: 'media',
           date: addDaysISO(t, -1), created: addDaysISO(t, -6), done: false, doneOn: null, subtasks: [] }
     ];
 }
@@ -310,7 +303,7 @@ function showCat() {
         <circle cx="96" cy="33" r="2" fill="var(--ink)"/>
         <path d="M90 39l-2 3M90 39l2 3" stroke="var(--ink)" stroke-width="1.5" stroke-linecap="round"/>
         <path d="M91 43L108 22" stroke="#90A970" stroke-width="2.5" stroke-linecap="round"/>
-        ${flowerHead(108, 22, today ? today.tasks : [])}
+        ${flowerHead(108, 22, today ? today.tasks.length : 0)}
       </svg>
       <p><strong>Consegna speciale!</strong>Hai finito tutto: il fiore di oggi è nel tuo giardino.</p>
       <button type="button">Grazie</button>`;
@@ -321,12 +314,9 @@ function showCat() {
 /* ---------- Task ---------- */
 export const getTasks = () => cache;
 
-/* Task "dovuti" in un giorno: un evento vale solo nella sua data;
-   una scadenza resta visibile ogni giorno dalla creazione fino alla scadenza. */
+/* Task previsti in un giorno */
 export function dueOn(iso) {
-    return getTasks().filter((t) => t.type === 'scadenza'
-        ? t.created <= iso && t.date >= iso && (!t.done || t.doneOn === iso)
-        : t.date === iso);
+    return getTasks().filter((t) => t.date === iso);
 }
 
 /* Task non completati con data già passata: alimentano "In sospeso" */
@@ -351,11 +341,13 @@ export function flowers() {
         .map(([date, tasks]) => ({ date, tasks: tasks.slice(0, MAX_TASKS_PER_DAY) }));
 }
 
-/* Corolla del fiore: un petalo per task, dall'alto in senso orario */
-export function flowerHead(x, y, tasks) {
-    const petals = tasks.map((t, i) => {
+/* Corolla del fiore: n petali dall'alto in senso orario, con i colori della palette a rotazione */
+const PETAL_COLORS = ['--rose', '--lav', '--gold', '--blue', '--coral', '--green'];
+
+export function flowerHead(x, y, n) {
+    const petals = Array.from({ length: n }, (_, i) => {
         const a = -Math.PI / 2 + (i * 2 * Math.PI) / MAX_TASKS_PER_DAY;
-        return `<circle cx="${(x + Math.cos(a) * 8).toFixed(1)}" cy="${(y + Math.sin(a) * 8).toFixed(1)}" r="4.4" style="fill: var(--cat-${t.category})"/>`;
+        return `<circle cx="${(x + Math.cos(a) * 8).toFixed(1)}" cy="${(y + Math.sin(a) * 8).toFixed(1)}" r="4.4" style="fill: var(${PETAL_COLORS[i % PETAL_COLORS.length]})"/>`;
     }).join('');
     return `<g fill-opacity="0.92">${petals}</g><circle cx="${x}" cy="${y}" r="3.6" fill="#F5CFDA"/>`;
 }
@@ -374,9 +366,7 @@ export async function addTask(draft) {
     const created = todayISO();
     const fields = {
         title: draft.title,
-        category: CATEGORIES[draft.category] ? draft.category : 'personale',
         priority: PRIORITIES.includes(draft.priority) ? draft.priority : 'media',
-        type: draft.type === 'scadenza' ? 'scadenza' : 'evento',
         date: draft.date || created,
         created
     };
@@ -484,12 +474,11 @@ export function taskCardHTML(t, { showDate = false, readOnly = false } = {}) {
     // I task completati restano fissi: fanno parte del fiore della loro giornata
     const edit = t.done ? '' : `<button class="task-edit" type="button" data-edit="${t.id}" aria-label="Modifica ${esc(t.title)}">${ICONS.edit}</button>`;
     return `
-      <article class="task ${t.done ? 'done' : ''}" data-cat="${t.category}" data-id="${t.id}">
+      <article class="task ${t.done ? 'done' : ''}" data-p="${t.priority}" data-id="${t.id}">
         <button class="task-check" type="button" data-check="${t.id}" ${lock} aria-label="${t.done ? 'Segna come da fare' : 'Completa'}: ${esc(t.title)}">${ICONS.check}</button>
         <div class="task-body">
           <div class="task-title">${esc(t.title)}</div>
           <div class="task-meta">
-            <span class="cat-label">${CATEGORIES[t.category].label}</span>
             <span class="prio" data-p="${t.priority}">${t.priority}</span>
             ${date}
           </div>
@@ -566,15 +555,6 @@ function nextWeekday(target) {
     return toISO(d);
 }
 
-function guessCategory(text) {
-    const l = text.toLowerCase();
-    if (/(riunione|presentazione|relazione|cliente|report|email|mail|progetto|ufficio)/.test(l)) return 'lavoro';
-    if (/(spesa|bolletta|pulire|casa|frutta|verdura|cucinare|bucato)/.test(l)) return 'casa';
-    if (/(studiare|leggere|esame|lezione|tesi|libro|ripasso)/.test(l)) return 'studio';
-    if (/(dentista|medico|yoga|palestra|visita|corsa|allenamento)/.test(l)) return 'salute';
-    return 'personale';
-}
-
 function heuristicAnalyze(text) {
     const l = text.toLowerCase();
     let date = todayISO();
@@ -593,8 +573,7 @@ function heuristicAnalyze(text) {
         .replace(/[,\s]+$/, '')
         .trim();
     const label = title.charAt(0).toUpperCase() + title.slice(1);
-    return [{ title: label || text.trim(), category: guessCategory(text), priority,
-              type: /\bentro\b/.test(l) ? 'scadenza' : 'evento', date }];
+    return [{ title: label || text.trim(), priority, date }];
 }
 
 let nlpPromise = null;
@@ -640,9 +619,7 @@ function setPageInert(value) {
 
 const options = (items, selected) => items
     .map(([value, text]) => `<option value="${value}" ${value === selected ? 'selected' : ''}>${text}</option>`).join('');
-const CATEGORY_OPTIONS = Object.entries(CATEGORIES).map(([k, v]) => [k, v.label]);
 const PRIORITY_OPTIONS = PRIORITIES.map((p) => [p, p]);
-const TYPE_OPTIONS = [['evento', 'Evento'], ['scadenza', 'Scadenza']];
 
 export function openSheet() {
     if (!sheetEl) return;
@@ -684,9 +661,7 @@ export function openEdit(id) {
     editingId = id;
     const q = (sel) => editEl.querySelector(sel);
     q('.ed-title').value = t.title;
-    q('.ed-cat').innerHTML = options(CATEGORY_OPTIONS, t.category);
     q('.ed-prio').innerHTML = options(PRIORITY_OPTIONS, t.priority);
-    q('.ed-type').innerHTML = options(TYPE_OPTIONS, t.type);
     q('.ed-date').value = t.date;
     q('[data-save]').disabled = false;
     lastFocus = document.activeElement;
@@ -730,7 +705,7 @@ function buildSheet() {
       <div data-view="input">
         <p class="ff-sheet-lead">Scrivi il task in modo naturale — l'AI lo strutturerà per te</p>
         <textarea rows="3" placeholder="Es. Chiamare il dentista domani, urgente"></textarea>
-        <p class="ff-hint">Suggerimento: puoi indicare data (oggi/domani/lunedì), priorità (urgente/importante) e tipo</p>
+        <p class="ff-hint">Suggerimento: puoi indicare data (oggi/domani/lunedì) e priorità (urgente/importante)</p>
         <button class="btn" type="button" data-analyze disabled>${ICONS.spark}<span>Analizza con AI</span></button>
       </div>
 
@@ -776,9 +751,7 @@ function buildSheet() {
               <input class="rv-title" type="text" value="${esc(d.title)}" aria-label="Titolo del task">
             </div>
             <div class="rv-fields">
-              <select class="rv-cat" aria-label="Categoria">${options(CATEGORY_OPTIONS, d.category)}</select>
               <select class="rv-prio" aria-label="Priorità">${options(PRIORITY_OPTIONS, d.priority)}</select>
-              <select class="rv-type" aria-label="Tipo">${options(TYPE_OPTIONS, d.type)}</select>
               <input class="rv-date" type="date" value="${d.date}" aria-label="Data">
             </div>
             <button class="rv-sub-btn" type="button">+ Suggerisci sotto-attività</button>
@@ -845,14 +818,11 @@ function buildSheet() {
         await Promise.all(rows.map(async (li) => {
             const title = li.querySelector('.rv-title').value.trim();
             if (!title) return;
-            const d = drafts[Number(li.dataset.i)];
             try {
                 await addTask({
                     title,
-                    category: li.querySelector('.rv-cat').value,
                     priority: li.querySelector('.rv-prio').value,
-                    type: li.querySelector('.rv-type').value,
-                    date: li.querySelector('.rv-date').value || d.date,
+                    date: li.querySelector('.rv-date').value || drafts[Number(li.dataset.i)].date,
                     subtasks: [...li.querySelectorAll('.rv-subs input:checked')]
                         .map((box) => box.parentElement.querySelector('span').textContent)
                 });
@@ -884,9 +854,7 @@ function buildEditSheet() {
       </header>
       <label class="ed-field"><span>Titolo</span><input class="ed-title" type="text" maxlength="200"></label>
       <div class="ed-grid">
-        <label class="ed-field"><span>Categoria</span><select class="ed-cat"></select></label>
         <label class="ed-field"><span>Priorità</span><select class="ed-prio"></select></label>
-        <label class="ed-field"><span>Tipo</span><select class="ed-type"></select></label>
         <label class="ed-field"><span>Data</span><input class="ed-date" type="date"></label>
       </div>
       <div class="rv-actions">
@@ -909,9 +877,7 @@ function buildEditSheet() {
         if (!task) return;
         const values = {
             title: title.value.replace(/\s+/g, ' ').trim(),
-            category: q('.ed-cat').value,
             priority: q('.ed-prio').value,
-            type: q('.ed-type').value,
             date: date.value
         };
         const changes = Object.fromEntries(Object.entries(values).filter(([k, v]) => v !== task[k]));

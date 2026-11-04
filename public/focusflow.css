@@ -19,22 +19,15 @@
     --coral: #C57873;
 
     /* Versioni scure della palette: per testo e controlli, con contrasto almeno 4.5:1 */
-    --ink-lavoro: #4A6399;
-    --ink-casa: #80621F;
-    --ink-studio: #625AA8;
-    --ink-salute: #93536A;
-    --ink-personale: #586E3B;
+    --ink-blue: #4A6399;
+    --ink-gold: #80621F;
+    --ink-lav: #625AA8;
+    --ink-rose: #93536A;
+    --ink-green: #586E3B;
     --danger: #A04D48;
 
-    /* Colore per categoria */
-    --cat-lavoro: var(--blue);
-    --cat-casa: var(--gold);
-    --cat-studio: var(--lav);
-    --cat-salute: var(--rose);
-    --cat-personale: var(--green);
-
     /* Accento dell'interfaccia (pulsanti, tab attiva). Un solo punto da cambiare. */
-    --accent: var(--ink-studio);
+    --accent: var(--ink-lav);
 
     --font-hand: 'Caveat', 'Segoe Script', 'Bradley Hand', cursive;
     --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -106,23 +99,20 @@ body {
 
 /* ---------- Card task ---------- */
 .task {
-    --cat: var(--muted);
-    --cat-ink: var(--muted);
+    --task: var(--lav);
     display: flex;
     gap: 12px;
     align-items: flex-start;
     background: var(--card);
     border-radius: 10px;
-    border-left: 3px solid var(--cat);
+    border-left: 3px solid var(--task);
     padding: 12px 14px;
     margin-bottom: 10px;
     box-shadow: 0 1px 2px rgba(60, 50, 40, 0.06), 0 4px 12px rgba(60, 50, 40, 0.05);
 }
-.task[data-cat="lavoro"]    { --cat: var(--cat-lavoro); --cat-ink: var(--ink-lavoro); }
-.task[data-cat="casa"]      { --cat: var(--cat-casa); --cat-ink: var(--ink-casa); }
-.task[data-cat="studio"]    { --cat: var(--cat-studio); --cat-ink: var(--ink-studio); }
-.task[data-cat="salute"]    { --cat: var(--cat-salute); --cat-ink: var(--ink-salute); }
-.task[data-cat="personale"] { --cat: var(--cat-personale); --cat-ink: var(--ink-personale); }
+.task[data-p="alta"]  { --task: var(--coral); }
+.task[data-p="media"] { --task: var(--gold); }
+.task[data-p="bassa"] { --task: var(--green); }
 
 .task-check {
     flex: none;
@@ -131,7 +121,7 @@ body {
     margin-top: 1px;
     padding: 0;
     border-radius: 50%;
-    border: 2px solid var(--cat-ink);
+    border: 2px solid var(--muted);
     background: transparent;
     cursor: pointer;
     display: grid;
@@ -141,7 +131,7 @@ body {
 .task-check::after { content: ""; position: absolute; inset: -11px; }   /* area di tocco di 44px */
 .task-check:disabled, .subtasks input:disabled { cursor: default; }
 .task-check svg { width: 12px; height: 12px; stroke: #fff; opacity: 0; }
-.task.done .task-check { background: var(--cat-ink); }
+.task.done .task-check { background: var(--muted); }
 .task.done .task-check svg { opacity: 1; }
 
 .task-edit {
@@ -156,7 +146,6 @@ body {
 .task.done .task-title { text-decoration: line-through; font-weight: 600; }
 
 .task-meta { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin-top: 6px; font-size: 12px; }
-.cat-label { color: var(--cat-ink); font-weight: 600; }
 
 .prio { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); }
 .prio::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--p, var(--muted)); }
@@ -216,12 +205,12 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 14px;
+    padding: 8px 10px;
     z-index: 20;
 }
 .ff-nav a {
     display: flex; flex-direction: column; align-items: center; gap: 2px;
-    min-width: 54px; font-size: 11px; color: var(--muted); text-decoration: none;
+    min-width: 50px; font-size: 11px; white-space: nowrap; color: var(--muted); text-decoration: none;
 }
 .ff-nav a svg { width: 20px; height: 20px; }
 .ff-nav a[aria-current="page"] { color: var(--accent); }

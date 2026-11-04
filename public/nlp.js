@@ -2,7 +2,6 @@
    ------------------------------------------------------------------
    - Segmentazione in più task   modello (Transformers.js) con tempo massimo, altrimenti regole
    - Data                        chrono-node + regole di ripiego per l'italiano
-   - Tipo evento / scadenza      regole
    - Priorità                    regole (il modello zero-shot è previsto in una fase successiva)
    - Sotto-attività              modello, altrimenti modello di testo generico
 
@@ -291,13 +290,8 @@ export function extractDate(text, chrono) {
 }
 
 /* ============================================================
-   3-5. Tipo, priorità, categoria
+   3. Priorità
    ============================================================ */
-export function classifyType(text) {
-    return new RegExp(`${L}(?:entro|scadenza|scade|scadono|termine|consegn\\w*|da consegnare)${R}`, 'iu').test(text)
-        ? 'scadenza' : 'evento';
-}
-
 const HIGH = `${L}(?:urgente|urgentissimo|subito|asap|importante|fondamentale|critico|il prima possibile|priorità alta)${R}`;
 const LOW = `${L}(?:non (?:è |e )?(?:urgente|importante)|con calma|quando ho tempo|se possibile|eventualmente|prima o poi|nessuna fretta|priorità bassa)${R}`;
 
@@ -305,20 +299,6 @@ export function classifyPriority(text) {
     if (new RegExp(LOW, 'iu').test(text)) return 'bassa';
     if (new RegExp(HIGH, 'iu').test(text)) return 'alta';
     return 'media';
-}
-
-const CATEGORY_RULES = [
-    ['salute', 'dentist|medic|yoga|palestr|visita|corsa|allenament|farmac|analisi (?:del sangue|medic|clinic)|dottor|fisioterap|dieta|nuoto'],
-    ['studio', 'studi|legg|esam|lezion|tesi|libro|ripass|capitol|appunt|universit|corso|compit|relator|laure'],
-    ['lavoro', 'riunion|present|relazion|client|report|mail|progett|uffic|collega|fattur|preventiv|codice|meeting|call|analisi'],
-    ['casa', 'spesa|bollett|pulir|pulizi|frutta|verdur|cucin|bucato|lavatric|idraulic|ripar|affitt|condomin|cena|supermerc']
-];
-
-export function classifyCategory(text) {
-    for (const [category, stems] of CATEGORY_RULES) {
-        if (new RegExp(`${L}(?:${stems})`, 'iu').test(text)) return category;
-    }
-    return 'personale';
 }
 
 /* ============================================================
@@ -357,9 +337,7 @@ export async function analyze(text) {
         if (iso) lastDate = iso;
         return {
             title: cleanTitle(seg, matched),
-            category: classifyCategory(seg),
             priority: sharedPriority || classifyPriority(seg),
-            type: classifyType(seg),
             date: lastDate || todayISO(),
             subtasks: []
         };
