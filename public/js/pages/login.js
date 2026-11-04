@@ -28,7 +28,7 @@ form.addEventListener('submit', async (e) => {
         await FF.init();
         if (registering) await FF.auth.register(user, password);
         else await FF.auth.login(user, password);
-        location.href = 'oggi.html';
+        location.href = 'pages/oggi.html';
     } catch (err) {
         error.textContent = err.message;
         submit.disabled = false;
@@ -36,7 +36,7 @@ form.addEventListener('submit', async (e) => {
 });
 
 await FF.init();
-if (FF.session.ok()) location.replace('oggi.html');   // già autenticato
+if (FF.session.ok()) location.replace('pages/oggi.html');   // già autenticato
 
 if (FF.getMode() === 'api') switcher.hidden = false;
 else document.getElementById('demo-note').hidden = false;

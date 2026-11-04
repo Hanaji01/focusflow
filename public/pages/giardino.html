@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>FocusFlow — Giardino</title>
-    <link rel="stylesheet" href="focusflow.css">
+    <link rel="stylesheet" href="../css/focusflow.css">
     <style>
         /* Sfondo della pagina: sfumatura lilla chiaro → beige, senza quadretti (come nel video) */
         body {
@@ -25,18 +25,37 @@
         .meadow svg { display: block; width: 100%; height: auto; overflow: visible; }
         .garden-note { text-align: center; font-size: 13px; color: var(--muted); margin: 12px 12px 0; }
 
-        .account-links { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 18px); right: 18px; display: flex; gap: 14px; }
-        .exit-link {
-            padding: 4px 0; background: none; border: 0;
-            font: inherit; font-size: 13px; color: var(--muted); cursor: pointer; text-decoration: underline; text-underline-offset: 3px;
+        .account { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 14px); right: 18px; }
+        .account-btn {
+            width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%;
+            background: var(--card); color: var(--accent); cursor: pointer;
+            display: grid; place-items: center;
+            box-shadow: 0 1px 2px rgba(60, 50, 40, 0.08), 0 4px 12px rgba(60, 50, 40, 0.08);
         }
+        .account-btn svg { width: 24px; height: 24px; }
+        .account-menu {
+            position: absolute; top: 52px; right: 0; z-index: 10; min-width: 190px; padding: 6px;
+            background: var(--card); border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(60, 50, 40, 0.08), 0 10px 28px rgba(60, 50, 40, 0.16);
+        }
+        .account-menu a, .account-menu button {
+            display: block; width: 100%; padding: 11px 12px; border: 0; border-radius: 8px;
+            background: none; font: inherit; font-size: 14px; color: var(--ink);
+            text-align: left; text-decoration: none; cursor: pointer;
+        }
+        .account-menu a:hover, .account-menu button:hover { background: #F4F1EC; }
     </style>
 </head>
 <body>
     <main class="ff-app">
-        <div class="account-links">
-            <a class="exit-link" href="account.html">Account</a>
-            <button class="exit-link" type="button" id="logout">Esci dall'account</button>
+        <div class="account" id="account">
+            <button class="account-btn" type="button" id="account-btn" aria-label="Menu account" aria-haspopup="true" aria-expanded="false" aria-controls="account-menu">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></svg>
+            </button>
+            <div class="account-menu" id="account-menu" hidden>
+                <a href="account.html">Account</a>
+                <button type="button" id="logout">Esci dall'account</button>
+            </div>
         </div>
         <p class="ff-kicker">Il tuo</p>
         <h1 class="ff-title">Giardino</h1>
@@ -52,6 +71,6 @@
 
     </main>
 
-    <script type="module" src="pages/giardino.js"></script>
+    <script type="module" src="../js/pages/giardino.js"></script>
 </body>
 </html>

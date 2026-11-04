@@ -2,9 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import mysql from 'mysql2/promise';
-import { dbConfig } from '../db.js';
+import { dbConfig } from './db.js';
 
-const sql = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'schema.sql'), 'utf8');
+const sql = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'schema.sql'), 'utf8');
 
 if (!dbConfig.user || !dbConfig.database) {
   console.error('Imposta DB_USER e DB_NAME nel file .env');

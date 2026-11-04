@@ -1,42 +1,21 @@
 /* FocusFlow — base condivisa da tutte le pagine
-   - dati dei task (localStorage, in attesa del backend Node/Express/MySQL)
-   - sessione demo
+   - dati dei task (server Express + MySQL, o localStorage in modalità demo)
+   - sessione e accesso
    - barra di navigazione e pannello "Nuovo task"
-   Uso nelle pagine:  <script type="module"> import * as FF from './app.js'; ... </script> */
+   Uso negli script delle pagine (public/js/pages):  import * as FF from "../app.js"; */
+
+import { todayISO, addDaysISO, shortDate } from './dates.js';
+export * from './dates.js';
 
 export const PRIORITIES = ['alta', 'media', 'bassa'];
-export const MAX_TASKS_PER_DAY = 8;   // stesso valore in server/lib/validate.js: un petalo per task
+export const MAX_TASKS_PER_DAY = 8;   // stesso valore in server/routes/lib/validate.js: un petalo per task
+
+// La pagina di accesso è public/index.html, le altre stanno in public/pages
+export const LOGIN_PAGE = location.pathname.includes('/pages/') ? '../index.html' : 'index.html';
 
 const KEY_TASKS = 'ff_tasks';
 const KEY_USER = 'ff_user';
 const KEY_CAT = 'ff_cat_day';   // demo: ultimo giorno in cui il gattino ha consegnato il fiore
-
-/* ============================================================
-   Date — sempre in ora locale, formato YYYY-MM-DD
-   ============================================================ */
-export function toISO(d) {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-}
-export function fromISO(iso) {
-    const [y, m, d] = iso.split('-').map(Number);
-    return new Date(y, m - 1, d);
-}
-export const todayISO = () => toISO(new Date());
-export function addDaysISO(iso, n) {
-    const d = fromISO(iso);
-    d.setDate(d.getDate() + n);
-    return toISO(d);
-}
-export function longDate(iso) {
-    const s = fromISO(iso).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
-    return s.charAt(0).toUpperCase() + s.slice(1);
-}
-export function shortDate(iso) {
-    return fromISO(iso).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }).replace('.', '');
-}
 
 export function esc(s) {
     return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -120,7 +99,7 @@ export const session = {
         if (token) store.set(KEY_TOKEN, token); else store.del(KEY_TOKEN);
     },
     clear() { store.del(KEY_USER); store.del(KEY_TOKEN); },
-    logout() { flushTelemetry(); session.clear(); location.href = 'login.html'; }
+    logout() { flushTelemetry(); session.clear(); location.href = LOGIN_PAGE; }
 };
 
 /* ---------- Telemetria tecnica (solo con il server) ---------- */
@@ -161,7 +140,7 @@ async function http(method, path, body) {
 
     if (res.status === 401 && token) {          // sessione scaduta o token non valido
         session.clear();
-        location.replace('login.html');
+        location.replace(LOGIN_PAGE);
         throw new Error('Sessione scaduta: accedi di nuovo');
     }
     if (!res.ok) throw Object.assign(new Error((data && data.error) || `Errore ${res.status}`), { status: res.status });
@@ -201,7 +180,7 @@ export function init() {
 export async function boot(active) {
     await init();
     if (!session.ok()) {
-        location.replace('login.html');
+        location.replace(LOGIN_PAGE);
         await new Promise(() => {}); // la pagina sta cambiando: si ferma qui
     }
     mountNav(active);
@@ -292,7 +271,7 @@ function showCat() {
     el.className = 'ff-cat';
     el.setAttribute('role', 'status');
     const cat = ART_READY
-        ? `<span class="ff-cat-art" aria-hidden="true"><img src="img/gattino.png" alt=""><img src="${flowerArt(petals || 1)}" alt=""></span>`
+        ? `<span class="ff-cat-art" aria-hidden="true"><img src="../assets/gattino.png" alt=""><img src="${flowerArt(petals || 1)}" alt=""></span>`
         : `
       <svg viewBox="0 0 120 84" aria-hidden="true">
         <path d="M24 52c-14-4-18-18-10-27" fill="none" stroke="var(--gold)" stroke-width="7" stroke-linecap="round"/>
@@ -346,10 +325,10 @@ export function flowers() {
         .map(([date, tasks]) => ({ date, tasks: tasks.slice(0, MAX_TASKS_PER_DAY) }));
 }
 
-/* Disegni in public/img: fiore-1.png ... fiore-8.png e gattino.png.
+/* Disegni in public/assets: fiore-1.png ... fiore-8.png e gattino.png.
    Da mettere a true quando ci sono tutti; fino ad allora si usano i segnaposto disegnati qui. */
 export const ART_READY = false;
-export const flowerArt = (n) => `img/fiore-${Math.min(n, MAX_TASKS_PER_DAY)}.png`;
+export const flowerArt = (n) => `../assets/fiore-${Math.min(n, MAX_TASKS_PER_DAY)}.png`;
 
 /* Corolla del fiore: n petali dall'alto in senso orario, con i colori della palette a rotazione */
 const PETAL_COLORS = ['--rose', '--lav', '--gold', '--blue', '--coral', '--green'];
@@ -551,44 +530,11 @@ export const ICONS = {
 };
 
 /* ============================================================
-   Analisi del testo del "Nuovo task"
-   La pipeline vera (chrono-node + modello sul dispositivo) è in nlp.js e si carica solo
-   quando serve. Se non si riesce a caricarla si usa questa euristica minima.
+   Analisi del testo del "Nuovo task": la pipeline è in nlp.js e si carica solo quando serve
    ============================================================ */
-const WEEKDAYS = { domenica: 0, lunedì: 1, lunedi: 1, martedì: 2, martedi: 2, mercoledì: 3, mercoledi: 3,
-                   giovedì: 4, giovedi: 4, venerdì: 5, venerdi: 5, sabato: 6 };
-
-function nextWeekday(target) {
-    const d = new Date();
-    const diff = (target - d.getDay() + 7) % 7 || 7;
-    d.setDate(d.getDate() + diff);
-    return toISO(d);
-}
-
-function heuristicAnalyze(text) {
-    const l = text.toLowerCase();
-    let date = todayISO();
-    if (/\bdopodomani\b/.test(l)) date = addDaysISO(todayISO(), 2);
-    else if (/\bdomani\b/.test(l)) date = addDaysISO(todayISO(), 1);
-    else {
-        // \b non riconosce il confine dopo una lettera accentata ("venerdì"): si usano lookaround Unicode
-        const day = Object.keys(WEEKDAYS).find((w) => new RegExp(`(?<!\\p{L})${w}(?!\\p{L})`, 'u').test(l));
-        if (day) date = nextWeekday(WEEKDAYS[day]);
-    }
-    const priority = /(urgente|importante|subito)/.test(l) ? 'alta'
-        : /(quando ho tempo|con calma|non urgente)/.test(l) ? 'bassa' : 'media';
-    const title = text
-        .replace(/\b(oggi|domani|dopodomani|urgente|importante)\b/gi, '')
-        .replace(/\s{2,}/g, ' ')
-        .replace(/[,\s]+$/, '')
-        .trim();
-    const label = title.charAt(0).toUpperCase() + title.slice(1);
-    return [{ title: label || text.trim(), priority, date }];
-}
-
 let nlpPromise = null;
 function getNlp() {
-    if (!nlpPromise) nlpPromise = import('./nlp.js').then((m) => { m.onStatus(renderStatus); return m; });
+    if (!nlpPromise) nlpPromise = import('./nlp.js').then((m) => { m.onStatus(renderStatus); m.setTracker(track); return m; });
     return nlpPromise;
 }
 
@@ -596,8 +542,8 @@ async function analyzeText(text) {
     try {
         return await (await getNlp()).analyze(text);
     } catch (err) {
-        console.warn('[FocusFlow] pipeline NLP non disponibile, uso l\'euristica minima.', err);
-        return heuristicAnalyze(text);
+        console.warn('[FocusFlow] analisi del testo non disponibile.', err);
+        return [{ title: text.trim(), priority: 'media', date: todayISO(), subtasks: [] }];
     }
 }
 
@@ -605,8 +551,7 @@ async function suggestSubtasks(title) {
     try {
         return await (await getNlp()).breakdown(title);
     } catch (err) {
-        const t = title.charAt(0).toLowerCase() + title.slice(1);
-        return { items: [`Preparare quello che serve per: ${t}`, `Svolgere: ${t}`, 'Controllare il risultato'], source: 'base' };
+        return { items: [], source: 'base' };
     }
 }
 

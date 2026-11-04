@@ -1,9 +1,15 @@
 import { Router } from 'express';
-import { pool } from '../db.js';
-import { httpError } from '../lib/validate.js';
+import { pool } from '../database/db.js';
+import { httpError } from './lib/validate.js';
 
 const router = Router();
 const METRIC = /^[a-z][a-z0-9_]{1,39}$/;
+const KEEP_DAYS = 90;
+
+/** Le misure tecniche servono solo per un periodo: quelle più vecchie vengono cancellate. */
+export async function pruneTelemetry() {
+  await pool.execute('DELETE FROM telemetry_logs WHERE created_at < NOW() - INTERVAL ? DAY', [KEEP_DAYS]);
+}
 
 router.post('/', async (req, res) => {
   const events = (req.body || {}).events;

@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import { pool, withTransaction } from '../db.js';
+import { pool, withTransaction } from '../database/db.js';
 import {
   PRIORITIES, MAX_TASKS_PER_DAY, httpError, isISODate, cleanText, oneOf, dateField, idParam, addDays, serverToday
-} from '../lib/validate.js';
+} from './lib/validate.js';
 
 export const tasksRouter = Router();
 export const subtasksRouter = Router();

@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { pool, withTransaction } from '../db.js';
-import { httpError, dateField, addDays, serverToday } from '../lib/validate.js';
+import { pool, withTransaction } from '../database/db.js';
+import { httpError, dateField, addDays, serverToday } from './lib/validate.js';
 
 const router = Router();
 

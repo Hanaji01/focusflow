@@ -35,7 +35,7 @@ deleteForm.addEventListener('submit', async (e) => {
     button.disabled = true;
     try {
         await FF.auth.deleteAccount(document.getElementById('delete-password').value);
-        location.replace('login.html');
+        location.replace(FF.LOGIN_PAGE);
     } catch (err) {
         deleteError.textContent = err.message;
         button.disabled = false;

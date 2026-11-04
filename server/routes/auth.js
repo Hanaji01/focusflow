@@ -2,9 +2,9 @@ import { Router } from 'express';
 import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { pool } from '../db.js';
-import { httpError } from '../lib/validate.js';
-import { createLimiter } from '../lib/limit.js';
+import { pool } from '../database/db.js';
+import { httpError } from './lib/validate.js';
+import { createLimiter } from './lib/limit.js';
 
 const router = Router();
 const COST = 10;

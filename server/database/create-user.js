@@ -1,6 +1,6 @@
 // Uso: npm run user:create -- <utente> <password>
 import bcrypt from 'bcryptjs';
-import { pool } from '../db.js';
+import { pool } from './db.js';
 
 const [username, password] = process.argv.slice(2);
 if (!username || !password) {

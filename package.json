@@ -1,0 +1,25 @@
+{
+  "name": "focusflow",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "FocusFlow AI: web app con server Express e MySQL",
+  "scripts": {
+    "start": "node server/server.js",
+    "db:init": "node server/database/init-db.js",
+    "user:create": "node server/database/create-user.js",
+    "test": "node --test test/nlp.test.js test/server-lib.test.js",
+    "test:api": "node --env-file=.env test/integration/api.mjs",
+    "test:security": "node test/integration/security.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^17.0.0",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.14.0"
+  }
+}

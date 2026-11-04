@@ -2,11 +2,11 @@ import 'dotenv/config';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
-import { pool } from './db.js';
+import { pool } from './database/db.js';
 import authRouter, { requireAuth } from './routes/auth.js';
 import { tasksRouter, subtasksRouter } from './routes/tasks.js';
 import flowersRouter from './routes/flowers.js';
-import telemetryRouter from './routes/telemetry.js';
+import telemetryRouter, { pruneTelemetry } from './routes/telemetry.js';
 
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
   console.error('JWT_SECRET mancante o troppo corto (servono almeno 32 caratteri). Controlla il file .env');
@@ -56,7 +56,6 @@ app.use('/api/flowers', requireAuth, flowersRouter);
 app.use('/api/telemetry', requireAuth, telemetryRouter);
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Percorso non trovato' }));
 
-app.get('/', (_req, res) => res.redirect('/login.html'));
 app.use(express.static(publicDir));
 
 // Gestione errori: i dettagli interni non escono mai verso il client
@@ -70,3 +69,7 @@ app.use((err, _req, res, _next) => {
 
 const port = Number(process.env.PORT || 3000);
 app.listen(port, () => console.log(`FocusFlow in ascolto su http://localhost:${port}`));
+
+const prune = () => pruneTelemetry().catch((err) => console.error('Pulizia della telemetria non riuscita:', err.message));
+prune();
+setInterval(prune, 24 * 60 * 60 * 1000).unref();

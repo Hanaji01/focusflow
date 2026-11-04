@@ -9,7 +9,10 @@
    "Nuovo task", poi resta nella cache del browser. Gira in nlp-worker.js, quindi non blocca
    l'interfaccia: se non è attivo o non è pronto in pochi secondi si usano le regole. */
 
-import { todayISO, addDaysISO, toISO, track } from './app.js';
+import { todayISO, addDaysISO, toISO } from './dates.js';
+
+let track = () => {};
+export function setTracker(fn) { track = fn; }
 
 const CHRONO_URL = 'https://cdn.jsdelivr.net/npm/chrono-node@2.10.1/dist/esm/index.js';
 const TRANSFORMERS_URL = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.1';

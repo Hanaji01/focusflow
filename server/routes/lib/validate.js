@@ -1,5 +1,5 @@
 export const PRIORITIES = ['alta', 'media', 'bassa'];
-export const MAX_TASKS_PER_DAY = 8;   // stesso valore in public/app.js: un petalo per task
+export const MAX_TASKS_PER_DAY = 8;   // stesso valore in public/js/app.js: un petalo per task
 
 export function httpError(status, message) {
   return Object.assign(new Error(message), { status });
