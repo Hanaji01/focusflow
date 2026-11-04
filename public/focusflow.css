@@ -1,0 +1,294 @@
+/* FocusFlow — foglio di stile condiviso (tutte le pagine)
+   Font: Caveat per titoli e scritte a mano, Inter per il testo dell'interfaccia. */
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+:root {
+    --paper: #EFEBE4;
+    --grid: rgba(70, 60, 50, 0.06);
+    --card: #FFFFFF;
+    --ink: #2E2B33;
+    --muted: #8C8792;
+    --line: #E6E1DA;
+
+    /* Palette pastello del progetto */
+    --rose: #C192A2;
+    --lav: #A8A0D9;
+    --blue: #96AFE6;
+    --green: #9FB680;
+    --gold: #CEA76C;
+    --coral: #C57873;
+
+    /* Colore per categoria */
+    --cat-lavoro: var(--blue);
+    --cat-casa: var(--gold);
+    --cat-studio: var(--lav);
+    --cat-salute: var(--rose);
+    --cat-personale: var(--green);
+
+    /* Accento dell'interfaccia (pulsanti, tab attiva). Un solo punto da cambiare. */
+    --accent: var(--lav);
+
+    --font-hand: 'Caveat', 'Segoe Script', 'Bradley Hand', cursive;
+    --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+/* L'attributo hidden deve vincere su qualunque display impostato altrove */
+[hidden] { display: none !important; }
+
+html, body { margin: 0; }
+
+body {
+    font-family: var(--font-ui);
+    color: var(--ink);
+    background-color: var(--paper);
+    background-image:
+        linear-gradient(to right, var(--grid) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
+    background-size: 24px 24px;
+    -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+/* ---------- Struttura pagina ---------- */
+.ff-app {
+    max-width: 440px;
+    margin: 0 auto;
+    min-height: 100dvh;
+    padding: calc(env(safe-area-inset-top, 0px) + 22px) 18px 120px;
+    position: relative;
+}
+
+.ff-kicker {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+}
+
+.ff-title {
+    font-family: var(--font-hand);
+    font-size: 36px;
+    line-height: 1.05;
+    font-weight: 700;
+    margin: 2px 0 4px;
+}
+
+.ff-sub { font-size: 13px; color: var(--muted); margin: 0 0 18px; }
+
+.ff-section {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    margin: 22px 0 8px;
+}
+
+.ff-empty {
+    text-align: center;
+    color: var(--muted);
+    font-size: 14px;
+    padding: 36px 12px;
+}
+.ff-empty strong { display: block; font-family: var(--font-hand); font-size: 26px; color: var(--ink); font-weight: 600; margin-bottom: 4px; }
+
+/* ---------- Card task ---------- */
+.task {
+    --cat: var(--muted);
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    background: var(--card);
+    border-radius: 10px;
+    border-left: 3px solid var(--cat);
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 2px rgba(60, 50, 40, 0.06), 0 4px 12px rgba(60, 50, 40, 0.05);
+}
+.task[data-cat="lavoro"]    { --cat: var(--cat-lavoro); }
+.task[data-cat="casa"]      { --cat: var(--cat-casa); }
+.task[data-cat="studio"]    { --cat: var(--cat-studio); }
+.task[data-cat="salute"]    { --cat: var(--cat-salute); }
+.task[data-cat="personale"] { --cat: var(--cat-personale); }
+
+.task-check {
+    flex: none;
+    width: 22px;
+    height: 22px;
+    margin-top: 1px;
+    padding: 0;
+    border-radius: 50%;
+    border: 2px solid var(--cat);
+    background: transparent;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+}
+.task-check:disabled, .subtasks input:disabled { cursor: default; }
+.task-check svg { width: 12px; height: 12px; stroke: #fff; opacity: 0; }
+.task.done .task-check { background: var(--cat); }
+.task.done .task-check svg { opacity: 1; }
+
+.task-body { min-width: 0; flex: 1; }
+.task-title { font-size: 15px; font-weight: 500; line-height: 1.3; overflow-wrap: anywhere; }
+.task.done .task-title { text-decoration: line-through; font-weight: 600; }
+
+.task-meta { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin-top: 6px; font-size: 11px; }
+.cat-label { color: var(--cat); font-weight: 600; }
+
+.prio { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); }
+.prio::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--p, var(--muted)); }
+.prio[data-p="alta"]  { --p: var(--coral); }
+.prio[data-p="media"] { --p: var(--gold); }
+.prio[data-p="bassa"] { --p: var(--green); }
+
+.sub-toggle {
+    background: none; border: 0; padding: 0; margin-top: 6px;
+    font: inherit; font-size: 11px; color: var(--lav); cursor: pointer;
+}
+.subtasks { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.subtasks li { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+.subtasks input { accent-color: var(--lav); width: 15px; height: 15px; margin: 0; }
+.subtasks li.done span { text-decoration: line-through; color: var(--muted); }
+
+/* ---------- Pulsanti e campi ---------- */
+.btn {
+    width: 100%;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    background: var(--accent);
+    border: 0;
+    border-radius: 12px;
+    padding: 13px 16px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: opacity 0.15s;
+}
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn svg { width: 16px; height: 16px; }
+
+.ff-icon-btn {
+    width: 32px; height: 32px; border: 0; border-radius: 50%;
+    background: transparent; color: var(--muted); cursor: pointer;
+    display: grid; place-items: center;
+}
+.ff-icon-btn svg { width: 18px; height: 18px; }
+
+/* ---------- Barra di navigazione ---------- */
+.ff-nav {
+    position: fixed;
+    left: 50%;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+    transform: translateX(-50%);
+    width: min(404px, calc(100% - 24px));
+    background: #fff;
+    border-radius: 999px;
+    box-shadow: 0 2px 4px rgba(60, 50, 40, 0.06), 0 10px 28px rgba(60, 50, 40, 0.14);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    z-index: 20;
+}
+.ff-nav a {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    min-width: 54px; font-size: 10px; color: var(--muted); text-decoration: none;
+}
+.ff-nav a svg { width: 20px; height: 20px; }
+.ff-nav a[aria-current="page"] { color: var(--accent); }
+
+.ff-fab {
+    width: 46px; height: 46px; margin-top: -18px;
+    border: 0; border-radius: 50%;
+    background: var(--rose); color: #fff; cursor: pointer;
+    display: grid; place-items: center;
+    box-shadow: 0 6px 14px rgba(193, 146, 162, 0.5);
+}
+.ff-fab svg { width: 22px; height: 22px; }
+
+/* ---------- Pannello "Nuovo task" ---------- */
+.ff-backdrop {
+    position: fixed; inset: 0; z-index: 30;
+    background: rgba(40, 35, 45, 0.35);
+    backdrop-filter: blur(3px);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+}
+.ff-backdrop.open { opacity: 1; pointer-events: auto; }
+
+.ff-sheet {
+    position: fixed; left: 50%; bottom: 0; z-index: 31;
+    width: min(440px, 100%);
+    background: #fff;
+    border-radius: 22px 22px 0 0;
+    padding: 10px 20px calc(env(safe-area-inset-bottom, 0px) + 22px);
+    transform: translate(-50%, 105%);
+    transition: transform 0.25s ease;
+}
+.ff-sheet.open { transform: translate(-50%, 0); }
+
+.ff-sheet-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--line); margin: 0 auto 12px; }
+.ff-sheet-head { display: flex; align-items: center; justify-content: space-between; }
+.ff-sheet-head h2 { font-family: var(--font-hand); font-size: 28px; font-weight: 700; margin: 0; }
+.ff-sheet-lead { font-size: 13px; color: var(--muted); margin: 6px 0 12px; }
+
+.ff-sheet textarea {
+    width: 100%; min-height: 84px; resize: none;
+    font: inherit; font-size: 14px; color: var(--ink);
+    background: #F4F1EC; border: 0; border-radius: 12px; padding: 12px;
+}
+.ff-sheet textarea::placeholder { color: #A9A4AE; }
+.ff-hint { font-size: 11px; color: var(--muted); margin: 8px 0 14px; }
+
+@media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+}
+
+/* ---------- Controllo dei task trovati (pannello "Nuovo task") ---------- */
+.btn.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--line); }
+
+.rv-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; max-height: 50dvh; overflow-y: auto; }
+.rv-item { background: #F7F5F1; border-radius: 12px; padding: 10px 12px 12px; }
+.rv-head { display: flex; align-items: center; gap: 10px; }
+.rv-inc { width: 18px; height: 18px; accent-color: var(--accent); flex: none; margin: 0; }
+.rv-title {
+    flex: 1; min-width: 0; font: inherit; font-size: 15px; font-weight: 500; color: var(--ink);
+    background: transparent; border: 0; border-bottom: 1.5px solid transparent; padding: 4px 0;
+}
+.rv-title:focus { outline: none; border-bottom-color: var(--accent); }
+.rv-fields { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0 28px; }
+.rv-fields select, .rv-fields input {
+    font: inherit; font-size: 12px; color: var(--ink); background: #fff;
+    border: 1.5px solid var(--line); border-radius: 8px; padding: 5px 8px;
+}
+.rv-sub-btn {
+    display: block; margin: 8px 0 0 28px; padding: 0; background: none; border: 0;
+    font: inherit; font-size: 12px; color: var(--lav); cursor: pointer;
+}
+.rv-sub-btn:disabled { color: var(--muted); cursor: default; }
+.rv-subs { list-style: none; margin: 8px 0 0 28px; padding: 0; display: grid; gap: 6px; }
+.rv-subs label { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+.rv-subs input { accent-color: var(--lav); width: 15px; height: 15px; margin: 0; }
+.rv-note { margin: 6px 0 0 28px; font-size: 11px; color: var(--muted); }
+.rv-actions { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-top: 14px; }
+
+.ff-ai-status { min-height: 16px; margin: 10px 0 0; font-size: 11px; color: var(--muted); text-align: center; }
+
+/* ---------- Messaggio breve in basso ---------- */
+.ff-toast {
+    position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 96px);
+    transform: translate(-50%, 12px); z-index: 40; max-width: min(380px, calc(100% - 32px));
+    background: var(--ink); color: #fff; font-size: 13px; line-height: 1.35;
+    padding: 10px 16px; border-radius: 12px; opacity: 0; pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+}
+.ff-toast.show { opacity: 1; transform: translate(-50%, 0); }

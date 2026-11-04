@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>FocusFlow — Calendario</title>
+    <link rel="stylesheet" href="focusflow.css">
+    <style>
+        .cal-head { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; margin: 6px 0 14px; }
+        .cal-head .ff-title { text-align: center; font-size: 28px; margin: 0; }
+        .cal-arrow {
+            width: 44px; height: 44px; border: 0; background: transparent; color: var(--lav);
+            cursor: pointer; display: grid; place-items: center; border-radius: 50%;
+        }
+        .cal-arrow svg { width: 18px; height: 18px; }
+
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 4px; }
+        .cal-dow { text-align: center; font-size: 12px; font-weight: 500; color: var(--muted); padding: 6px 0 12px; }
+        .cal-day {
+            height: 44px; border: 0; background: transparent; border-radius: 12px;
+            font: inherit; font-size: 16px; font-weight: 500; color: var(--ink); cursor: pointer;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+        }
+        .cal-day[aria-current="date"] { color: var(--lav); font-weight: 600; }
+        .cal-day[aria-pressed="true"] { background: rgba(168, 160, 217, 0.18); }
+        .dots { display: flex; gap: 3px; height: 5px; }
+        .dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--c); }
+        .dots i.done { opacity: 0.35; }
+
+        .back-link {
+            display: block; margin: 14px auto 0; background: none; border: 0;
+            font: inherit; font-size: 13px; font-weight: 600; color: var(--lav); cursor: pointer;
+        }
+
+        .day-panel { margin-top: 26px; }
+        .day-title { font-family: var(--font-hand); font-size: 28px; font-weight: 700; margin: 0; }
+    </style>
+</head>
+<body>
+    <main class="ff-app">
+        <p class="ff-kicker">Calendario</p>
+
+        <div class="cal-head">
+            <button class="cal-arrow" type="button" id="prev" aria-label="Mese precedente">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+            </button>
+            <h1 class="ff-title" id="month-title"></h1>
+            <button class="cal-arrow" type="button" id="next" aria-label="Mese successivo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+            </button>
+        </div>
+
+        <div class="cal-grid" id="grid" role="group" aria-labelledby="month-title"></div>
+        <button class="back-link" type="button" id="go-today" hidden>Torna a oggi</button>
+
+        <section class="day-panel" id="day-panel" hidden aria-live="polite">
+            <h2 class="day-title" id="day-title"></h2>
+            <p class="ff-sub" id="day-sub"></p>
+            <div id="day-list"></div>
+        </section>
+    </main>
+
+    <script type="module">
+        import * as FF from './app.js';
+
+        window.FF = FF;
+        await FF.boot('calendario');
+
+        const today = FF.todayISO();
+        const start = FF.fromISO(today);
+        let view = { y: start.getFullYear(), m: start.getMonth() };
+        let selected = null; // nessun giorno aperto: la pagina parte come nel video
+
+        const gridEl = document.getElementById('grid');
+        const listEl = document.getElementById('day-list');
+        const DOW = ['Lu', 'Ma', 'Me', 'Gi', 'Ve', 'Sa', 'Do'];
+        const CAT_VAR = { lavoro: '--cat-lavoro', casa: '--cat-casa', studio: '--cat-studio', salute: '--cat-salute', personale: '--cat-personale' };
+
+        function monthTitle() {
+            const s = new Date(view.y, view.m, 1).toLocaleDateString('it-IT', { month: 'long', year: 'numeric' });
+            return s.charAt(0).toUpperCase() + s.slice(1);
+        }
+
+        function renderGrid() {
+            document.getElementById('month-title').textContent = monthTitle();
+            const first = new Date(view.y, view.m, 1);
+            const offset = (first.getDay() + 6) % 7; // la settimana parte da lunedì
+            const days = new Date(view.y, view.m + 1, 0).getDate();
+
+            let html = DOW.map((d) => `<div class="cal-dow" aria-hidden="true">${d}</div>`).join('');
+            html += '<div></div>'.repeat(offset);
+
+            for (let d = 1; d <= days; d++) {
+                const iso = FF.toISO(new Date(view.y, view.m, d));
+                const dots = FF.dueOn(iso).slice(0, 3)
+                    .map((t) => `<i class="${t.done ? 'done' : ''}" style="--c: var(${CAT_VAR[t.category]})"></i>`).join('');
+                html += `<button type="button" class="cal-day" data-iso="${iso}"
+                            aria-label="${FF.longDate(iso)}" aria-pressed="${iso === selected}"
+                            ${iso === today ? 'aria-current="date"' : ''}>
+                            <span>${d}</span><span class="dots">${dots}</span></button>`;
+            }
+            gridEl.innerHTML = html;
+            document.getElementById('go-today').hidden = view.y === start.getFullYear() && view.m === start.getMonth();
+        }
+
+        function renderDay() {
+            const panel = document.getElementById('day-panel');
+            panel.hidden = !selected;
+            if (!selected) return;
+
+            const tasks = FF.dueOn(selected);
+            const done = tasks.filter((t) => t.done).length;
+            document.getElementById('day-title').textContent = FF.longDate(selected);
+            document.getElementById('day-sub').textContent = tasks.length === 0
+                ? 'Nessun task per questo giorno'
+                : `${tasks.length} task, ${done} ${done === 1 ? 'completato' : 'completati'}`;
+            // le spunte si modificano solo nella giornata di oggi
+            listEl.innerHTML = tasks.map((t) => FF.taskCardHTML(t, { readOnly: selected !== today })).join('');
+        }
+
+        function render() { renderGrid(); renderDay(); }
+
+        function shiftMonth(delta) {
+            const d = new Date(view.y, view.m + delta, 1);
+            view = { y: d.getFullYear(), m: d.getMonth() };
+            renderGrid();
+        }
+
+        gridEl.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-iso]');
+            if (!btn) return;
+            selected = selected === btn.dataset.iso ? null : btn.dataset.iso; // secondo tocco: chiude
+            render();
+            if (selected) document.getElementById('day-panel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        });
+        document.getElementById('prev').addEventListener('click', () => shiftMonth(-1));
+        document.getElementById('next').addEventListener('click', () => shiftMonth(1));
+        document.getElementById('go-today').addEventListener('click', () => {
+            view = { y: start.getFullYear(), m: start.getMonth() };
+            renderGrid();
+        });
+
+        FF.wireTaskList(listEl);
+        window.addEventListener('ff:change', render);
+        render();
+    </script>
+</body>
+</html>

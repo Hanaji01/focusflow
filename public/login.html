@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>FocusFlow — Accedi</title>
+    <link rel="stylesheet" href="focusflow.css">
+    <style>
+        .login {
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding-bottom: 40px;
+        }
+        .tagline {
+            font-family: var(--font-hand);
+            font-size: 22px;
+            font-weight: 500;
+            text-align: center;
+            margin: 0 0 20px;
+        }
+        .tagline span:nth-child(1) { color: var(--rose); }
+        .tagline span:nth-child(2) { color: var(--gold); }
+        .tagline span:nth-child(3) { color: var(--green); }
+        .tagline span:nth-child(4) { color: var(--blue); }
+        .tagline span:nth-child(5) { color: var(--lav); }
+        .tagline span:nth-child(6) { color: var(--coral); }
+
+        .login-card {
+            background: var(--card);
+            border-top: 3px solid var(--accent);
+            border-radius: 22px;
+            padding: 26px 22px 22px;
+            box-shadow: 0 2px 4px rgba(60, 50, 40, 0.06), 0 12px 32px rgba(60, 50, 40, 0.10);
+        }
+        .login-card h1 {
+            font-family: var(--font-hand);
+            font-size: 34px;
+            font-weight: 700;
+            text-align: center;
+            margin: 0 0 20px;
+        }
+        .field { display: block; margin-bottom: 14px; }
+        .field span { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+        .field input {
+            width: 100%;
+            font: inherit;
+            font-size: 15px;
+            color: var(--ink);
+            background: #F4F1EC;
+            border: 2px solid transparent;
+            border-radius: 10px;
+            padding: 12px;
+        }
+        .field input:focus { outline: none; border-color: var(--accent); background: #fff; }
+        .login-error { min-height: 18px; margin: 0 0 8px; font-size: 12px; color: var(--coral); }
+        .switch-mode {
+            display: block; margin: 14px auto 0; background: none; border: 0;
+            font: inherit; font-size: 13px; color: var(--lav); cursor: pointer;
+        }
+        .demo-note { margin: 12px 0 0; text-align: center; font-size: 12px; color: var(--muted); }
+    </style>
+</head>
+<body>
+    <main class="ff-app login">
+        <p class="tagline" aria-label="Every day is a new chance">
+            <span>Every</span> <span>day</span> <span>is</span> <span>a</span> <span>new</span> <span>chance</span>
+        </p>
+
+        <form class="login-card" id="login-form" novalidate>
+            <h1>FocusFlow</h1>
+
+            <label class="field">
+                <span>Utente</span>
+                <input id="user" name="user" type="text" autocomplete="username" autocapitalize="none" required>
+            </label>
+
+            <label class="field">
+                <span>Password</span>
+                <input id="password" name="password" type="password" autocomplete="current-password" required>
+            </label>
+
+            <p class="login-error" id="login-error" role="alert"></p>
+            <button class="btn" type="submit" id="submit-btn">Accedi</button>
+            <button class="switch-mode" type="button" id="switch-mode" hidden>Non hai un account? Registrati</button>
+        </form>
+        <p class="demo-note" id="demo-note" hidden>Modalità demo: nessun server collegato, i dati restano in questo browser.</p>
+    </main>
+
+    <script type="module">
+        import * as FF from './app.js';
+
+        const form = document.getElementById('login-form');
+        const error = document.getElementById('login-error');
+        const submit = document.getElementById('submit-btn');
+        const switcher = document.getElementById('switch-mode');
+        let registering = false;
+
+        await FF.init();
+        if (FF.session.ok()) location.replace('oggi.html');   // già autenticato
+
+        if (FF.getMode() === 'api') switcher.hidden = false;
+        else document.getElementById('demo-note').hidden = false;
+
+        function setMode(register) {
+            registering = register;
+            submit.textContent = register ? 'Crea account' : 'Accedi';
+            switcher.textContent = register ? 'Hai già un account? Accedi' : 'Non hai un account? Registrati';
+            document.getElementById('password').autocomplete = register ? 'new-password' : 'current-password';
+            error.textContent = '';
+        }
+        switcher.addEventListener('click', () => setMode(!registering));
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const user = document.getElementById('user').value.trim();
+            const password = document.getElementById('password').value;
+            if (!user || !password) { error.textContent = 'Inserisci utente e password per accedere.'; return; }
+
+            submit.disabled = true;
+            error.textContent = '';
+            try {
+                if (registering) await FF.auth.register(user, password);
+                else await FF.auth.login(user, password);
+                location.href = 'oggi.html';
+            } catch (err) {
+                error.textContent = err.message;
+                submit.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
