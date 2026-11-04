@@ -7,7 +7,7 @@
     --grid: rgba(70, 60, 50, 0.06);
     --card: #FFFFFF;
     --ink: #2E2B33;
-    --muted: #8C8792;
+    --muted: #68646D;
     --line: #E6E1DA;
 
     /* Palette pastello del progetto */
@@ -18,6 +18,14 @@
     --gold: #CEA76C;
     --coral: #C57873;
 
+    /* Versioni scure della palette: per testo e controlli, con contrasto almeno 4.5:1 */
+    --ink-lavoro: #4A6399;
+    --ink-casa: #80621F;
+    --ink-studio: #625AA8;
+    --ink-salute: #93536A;
+    --ink-personale: #586E3B;
+    --danger: #A04D48;
+
     /* Colore per categoria */
     --cat-lavoro: var(--blue);
     --cat-casa: var(--gold);
@@ -26,7 +34,7 @@
     --cat-personale: var(--green);
 
     /* Accento dell'interfaccia (pulsanti, tab attiva). Un solo punto da cambiare. */
-    --accent: var(--lav);
+    --accent: var(--ink-studio);
 
     --font-hand: 'Caveat', 'Segoe Script', 'Bradley Hand', cursive;
     --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -50,7 +58,7 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
-:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ---------- Struttura pagina ---------- */
 .ff-app {
@@ -99,6 +107,7 @@ body {
 /* ---------- Card task ---------- */
 .task {
     --cat: var(--muted);
+    --cat-ink: var(--muted);
     display: flex;
     gap: 12px;
     align-items: flex-start;
@@ -109,11 +118,11 @@ body {
     margin-bottom: 10px;
     box-shadow: 0 1px 2px rgba(60, 50, 40, 0.06), 0 4px 12px rgba(60, 50, 40, 0.05);
 }
-.task[data-cat="lavoro"]    { --cat: var(--cat-lavoro); }
-.task[data-cat="casa"]      { --cat: var(--cat-casa); }
-.task[data-cat="studio"]    { --cat: var(--cat-studio); }
-.task[data-cat="salute"]    { --cat: var(--cat-salute); }
-.task[data-cat="personale"] { --cat: var(--cat-personale); }
+.task[data-cat="lavoro"]    { --cat: var(--cat-lavoro); --cat-ink: var(--ink-lavoro); }
+.task[data-cat="casa"]      { --cat: var(--cat-casa); --cat-ink: var(--ink-casa); }
+.task[data-cat="studio"]    { --cat: var(--cat-studio); --cat-ink: var(--ink-studio); }
+.task[data-cat="salute"]    { --cat: var(--cat-salute); --cat-ink: var(--ink-salute); }
+.task[data-cat="personale"] { --cat: var(--cat-personale); --cat-ink: var(--ink-personale); }
 
 .task-check {
     flex: none;
@@ -122,15 +131,17 @@ body {
     margin-top: 1px;
     padding: 0;
     border-radius: 50%;
-    border: 2px solid var(--cat);
+    border: 2px solid var(--cat-ink);
     background: transparent;
     cursor: pointer;
     display: grid;
     place-items: center;
+    position: relative;
 }
+.task-check::after { content: ""; position: absolute; inset: -11px; }   /* area di tocco di 44px */
 .task-check:disabled, .subtasks input:disabled { cursor: default; }
 .task-check svg { width: 12px; height: 12px; stroke: #fff; opacity: 0; }
-.task.done .task-check { background: var(--cat); }
+.task.done .task-check { background: var(--cat-ink); }
 .task.done .task-check svg { opacity: 1; }
 
 .task-edit {
@@ -144,8 +155,8 @@ body {
 .task-title { font-size: 15px; font-weight: 500; line-height: 1.3; overflow-wrap: anywhere; }
 .task.done .task-title { text-decoration: line-through; font-weight: 600; }
 
-.task-meta { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin-top: 6px; font-size: 11px; }
-.cat-label { color: var(--cat); font-weight: 600; }
+.task-meta { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin-top: 6px; font-size: 12px; }
+.cat-label { color: var(--cat-ink); font-weight: 600; }
 
 .prio { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); }
 .prio::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--p, var(--muted)); }
@@ -155,11 +166,13 @@ body {
 
 .sub-toggle {
     background: none; border: 0; padding: 0; margin-top: 6px;
-    font: inherit; font-size: 11px; color: var(--lav); cursor: pointer;
+    font: inherit; font-size: 12px; color: var(--accent); cursor: pointer;
 }
+.sub-arrow { display: inline-block; transition: transform 0.15s; }
+.sub-toggle[aria-expanded="true"] .sub-arrow { transform: rotate(90deg); }
 .subtasks { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; }
 .subtasks li { display: flex; gap: 8px; align-items: center; font-size: 13px; }
-.subtasks input { accent-color: var(--lav); width: 15px; height: 15px; margin: 0; }
+.subtasks input { accent-color: var(--accent); width: 18px; height: 18px; margin: 0; flex: none; }
 .subtasks li.done span { text-decoration: line-through; color: var(--muted); }
 
 /* ---------- Pulsanti e campi ---------- */
@@ -208,7 +221,7 @@ body {
 }
 .ff-nav a {
     display: flex; flex-direction: column; align-items: center; gap: 2px;
-    min-width: 54px; font-size: 10px; color: var(--muted); text-decoration: none;
+    min-width: 54px; font-size: 11px; color: var(--muted); text-decoration: none;
 }
 .ff-nav a svg { width: 20px; height: 20px; }
 .ff-nav a[aria-current="page"] { color: var(--accent); }
@@ -216,7 +229,7 @@ body {
 .ff-fab {
     width: 46px; height: 46px; margin-top: -18px;
     border: 0; border-radius: 50%;
-    background: var(--rose); color: #fff; cursor: pointer;
+    background: #AD7389; color: #fff; cursor: pointer;
     display: grid; place-items: center;
     box-shadow: 0 6px 14px rgba(193, 146, 162, 0.5);
 }
@@ -238,6 +251,7 @@ body {
     background: #fff;
     border-radius: 22px 22px 0 0;
     padding: 10px 20px calc(env(safe-area-inset-bottom, 0px) + 22px);
+    max-height: 100dvh; overflow-y: auto;
     transform: translate(-50%, 105%);
     transition: transform 0.25s ease;
 }
@@ -253,8 +267,8 @@ body {
     font: inherit; font-size: 14px; color: var(--ink);
     background: #F4F1EC; border: 0; border-radius: 12px; padding: 12px;
 }
-.ff-sheet textarea::placeholder { color: #A9A4AE; }
-.ff-hint { font-size: 11px; color: var(--muted); margin: 8px 0 14px; }
+.ff-sheet textarea::placeholder { color: var(--muted); opacity: 1; }
+.ff-hint { font-size: 12px; color: var(--muted); margin: 8px 0 14px; }
 
 @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; animation: none !important; }
@@ -279,16 +293,16 @@ body {
 }
 .rv-sub-btn {
     display: block; margin: 8px 0 0 28px; padding: 0; background: none; border: 0;
-    font: inherit; font-size: 12px; color: var(--lav); cursor: pointer;
+    font: inherit; font-size: 12px; color: var(--accent); cursor: pointer;
 }
 .rv-sub-btn:disabled { color: var(--muted); cursor: default; }
 .rv-subs { list-style: none; margin: 8px 0 0 28px; padding: 0; display: grid; gap: 6px; }
 .rv-subs label { display: flex; gap: 8px; align-items: center; font-size: 13px; }
-.rv-subs input { accent-color: var(--lav); width: 15px; height: 15px; margin: 0; }
-.rv-note { margin: 6px 0 0 28px; font-size: 11px; color: var(--muted); }
+.rv-subs input { accent-color: var(--accent); width: 18px; height: 18px; margin: 0; flex: none; }
+.rv-note { margin: 6px 0 0 28px; font-size: 12px; color: var(--muted); }
 .rv-actions { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-top: 14px; }
 
-.ff-ai-status { min-height: 16px; margin: 10px 0 0; font-size: 11px; color: var(--muted); text-align: center; }
+.ff-ai-status { min-height: 16px; margin: 10px 0 0; font-size: 12px; color: var(--muted); text-align: center; }
 .ff-ai-status button {
     background: none; border: 0; padding: 0;
     font: inherit; font-weight: 600; color: var(--ink);
@@ -332,7 +346,7 @@ body {
 /* ---------- Avviso fisso in cima alla pagina ---------- */
 .ff-banner {
     margin: 0 0 14px; padding: 10px 14px; border-radius: 10px;
-    background: var(--card); border-left: 3px solid var(--coral);
+    background: var(--card); border-left: 3px solid var(--danger);
     font-size: 13px; line-height: 1.35;
 }
 .ff-banner button {

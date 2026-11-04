@@ -9,7 +9,7 @@
         .cal-head { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; margin: 6px 0 14px; }
         .cal-head .ff-title { text-align: center; font-size: 28px; margin: 0; }
         .cal-arrow {
-            width: 44px; height: 44px; border: 0; background: transparent; color: var(--lav);
+            width: 44px; height: 44px; border: 0; background: transparent; color: var(--accent);
             cursor: pointer; display: grid; place-items: center; border-radius: 50%;
         }
         .cal-arrow svg { width: 18px; height: 18px; }
@@ -21,7 +21,7 @@
             font: inherit; font-size: 16px; font-weight: 500; color: var(--ink); cursor: pointer;
             display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
         }
-        .cal-day[aria-current="date"] { color: var(--lav); font-weight: 600; }
+        .cal-day[aria-current="date"] { color: var(--accent); font-weight: 700; }
         .cal-day[aria-pressed="true"] { background: rgba(168, 160, 217, 0.18); }
         .dots { display: flex; gap: 3px; height: 5px; }
         .dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--c); }
@@ -29,7 +29,7 @@
 
         .back-link {
             display: block; margin: 14px auto 0; background: none; border: 0;
-            font: inherit; font-size: 13px; font-weight: 600; color: var(--lav); cursor: pointer;
+            font: inherit; font-size: 13px; font-weight: 600; color: var(--accent); cursor: pointer;
         }
 
         .day-panel { margin-top: 26px; }
@@ -92,10 +92,11 @@
 
             for (let d = 1; d <= days; d++) {
                 const iso = FF.toISO(new Date(view.y, view.m, d));
-                const dots = FF.dueOn(iso).slice(0, 3)
+                const due = FF.dueOn(iso);
+                const dots = due.slice(0, 3)
                     .map((t) => `<i class="${t.done ? 'done' : ''}" style="--c: var(${CAT_VAR[t.category]})"></i>`).join('');
                 html += `<button type="button" class="cal-day" data-iso="${iso}"
-                            aria-label="${FF.longDate(iso)}" aria-pressed="${iso === selected}"
+                            aria-label="${FF.longDate(iso)}${due.length ? `, ${due.length} task` : ''}" aria-pressed="${iso === selected}"
                             ${iso === today ? 'aria-current="date"' : ''}>
                             <span>${d}</span><span class="dots">${dots}</span></button>`;
             }
@@ -129,9 +130,12 @@
         gridEl.addEventListener('click', (e) => {
             const btn = e.target.closest('[data-iso]');
             if (!btn) return;
-            selected = selected === btn.dataset.iso ? null : btn.dataset.iso; // secondo tocco: chiude
+            const iso = btn.dataset.iso;
+            selected = selected === iso ? null : iso; // secondo tocco: chiude
             render();
-            if (selected) document.getElementById('day-panel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            gridEl.querySelector(`[data-iso="${iso}"]`).focus();   // la griglia è stata ridisegnata
+            const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (selected) document.getElementById('day-panel').scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'nearest' });
         });
         document.getElementById('prev').addEventListener('click', () => shiftMonth(-1));
         document.getElementById('next').addEventListener('click', () => shiftMonth(1));

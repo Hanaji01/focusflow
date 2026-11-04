@@ -467,9 +467,9 @@ export function taskCardHTML(t, { showDate = false, readOnly = false } = {}) {
     const lock = readOnly ? 'disabled' : '';
     const subDone = t.subtasks.filter((s) => s.done).length;
     const subs = t.subtasks.length
-        ? `<button class="sub-toggle" type="button" data-toggle-subs="${t.id}">▸ ${subDone}/${t.subtasks.length} sotto-attività</button>
-           <ul class="subtasks" data-subs="${t.id}" ${openSubs.has(t.id) ? '' : 'hidden'}>
-             ${t.subtasks.map((s) => `<li class="${s.done ? 'done' : ''}"><input type="checkbox" data-sub="${t.id}:${s.id}" ${s.done ? 'checked' : ''} ${lock}><span>${esc(s.title)}</span></li>`).join('')}
+        ? `<button class="sub-toggle" type="button" data-toggle-subs="${t.id}" aria-expanded="${openSubs.has(t.id)}" aria-controls="subs-${t.id}"><span class="sub-arrow" aria-hidden="true">▸</span> ${subDone}/${t.subtasks.length} sotto-attività</button>
+           <ul class="subtasks" id="subs-${t.id}" data-subs="${t.id}" ${openSubs.has(t.id) ? '' : 'hidden'}>
+             ${t.subtasks.map((s) => `<li class="${s.done ? 'done' : ''}"><input type="checkbox" data-sub="${t.id}:${s.id}" aria-label="${esc(s.title)}" ${s.done ? 'checked' : ''} ${lock}><span>${esc(s.title)}</span></li>`).join('')}
            </ul>`
         : '';
     const date = showDate ? `<span>${shortDate(t.date)}</span>` : '';
@@ -477,7 +477,7 @@ export function taskCardHTML(t, { showDate = false, readOnly = false } = {}) {
     const edit = t.done ? '' : `<button class="task-edit" type="button" data-edit="${t.id}" aria-label="Modifica ${esc(t.title)}">${ICONS.edit}</button>`;
     return `
       <article class="task ${t.done ? 'done' : ''}" data-cat="${t.category}" data-id="${t.id}">
-        <button class="task-check" type="button" data-check="${t.id}" ${lock} aria-label="${t.done ? 'Segna come da fare' : 'Segna come completato'}">${ICONS.check}</button>
+        <button class="task-check" type="button" data-check="${t.id}" ${lock} aria-label="${t.done ? 'Segna come da fare' : 'Completa'}: ${esc(t.title)}">${ICONS.check}</button>
         <div class="task-body">
           <div class="task-title">${esc(t.title)}</div>
           <div class="task-meta">
@@ -495,7 +495,12 @@ export function taskCardHTML(t, { showDate = false, readOnly = false } = {}) {
 export function wireTaskList(root) {
     root.addEventListener('click', (e) => {
         const check = e.target.closest('[data-check]');
-        if (check) { toggleTask(check.dataset.check); return; }
+        if (check) {
+            const id = check.dataset.check;
+            toggleTask(id);
+            document.querySelector(`[data-check="${id}"]`)?.focus();   // la card è stata ridisegnata
+            return;
+        }
         const edit = e.target.closest('[data-edit]');
         if (edit) { openEdit(edit.dataset.edit); return; }
         const tog = e.target.closest('[data-toggle-subs]');
@@ -503,6 +508,7 @@ export function wireTaskList(root) {
             const list = root.querySelector(`[data-subs="${tog.dataset.toggleSubs}"]`);
             if (list) {
                 list.hidden = !list.hidden;
+                tog.setAttribute('aria-expanded', String(!list.hidden));
                 if (list.hidden) openSubs.delete(tog.dataset.toggleSubs);
                 else openSubs.add(tog.dataset.toggleSubs);
             }
@@ -510,7 +516,12 @@ export function wireTaskList(root) {
     });
     root.addEventListener('change', (e) => {
         const sub = e.target.closest('[data-sub]');
-        if (sub) { const [id, subId] = sub.dataset.sub.split(':'); toggleSub(id, subId); }
+        if (sub) {
+            const key = sub.dataset.sub;
+            const [id, subId] = key.split(':');
+            toggleSub(id, subId);
+            document.querySelector(`[data-sub="${key}"]`)?.focus();
+        }
     });
 }
 
@@ -611,6 +622,13 @@ let backdropEl = null;
 let drafts = [];
 let editEl = null;
 let editingId = null;
+let lastFocus = null;     // elemento da cui si è aperto il pannello
+
+/* Con un pannello aperto, Tab non deve finire sulla pagina sotto */
+function setPageInert(value) {
+    document.querySelector('.ff-app')?.toggleAttribute('inert', value);
+    document.querySelector('.ff-nav')?.toggleAttribute('inert', value);
+}
 
 const options = (items, selected) => items
     .map(([value, text]) => `<option value="${value}" ${value === selected ? 'selected' : ''}>${text}</option>`).join('');
@@ -620,9 +638,12 @@ const TYPE_OPTIONS = [['evento', 'Evento'], ['scadenza', 'Scadenza']];
 
 export function openSheet() {
     if (!sheetEl) return;
+    lastFocus = document.activeElement;
+    setPageInert(true);
     backdropEl.classList.add('open');
     sheetEl.classList.add('open');
     sheetEl.setAttribute('aria-hidden', 'false');
+    sheetEl.inert = false;
     const first = sheetEl.querySelector('[data-view="review"]').hidden
         ? sheetEl.querySelector('textarea')
         : sheetEl.querySelector('.rv-title');
@@ -631,16 +652,22 @@ export function openSheet() {
 }
 
 export function closeSheet() {
-    if (!sheetEl) return;
+    if (!sheetEl || !backdropEl.classList.contains('open')) return;
+    const editedId = editingId;
     backdropEl.classList.remove('open');
     sheetEl.classList.remove('open');
     sheetEl.setAttribute('aria-hidden', 'true');
+    sheetEl.inert = true;
     if (editEl) {
         editEl.classList.remove('open');
         editEl.setAttribute('aria-hidden', 'true');
         editEl.inert = true;
         editingId = null;
     }
+    setPageInert(false);
+    // Se l'elenco è stato ridisegnato si torna al task modificato, o al pulsante +
+    const back = lastFocus?.isConnected ? lastFocus : document.querySelector(`[data-edit="${editedId}"]`);
+    (back || document.querySelector('.ff-fab'))?.focus();
 }
 
 export function openEdit(id) {
@@ -654,6 +681,8 @@ export function openEdit(id) {
     q('.ed-type').innerHTML = options(TYPE_OPTIONS, t.type);
     q('.ed-date').value = t.date;
     q('[data-save]').disabled = false;
+    lastFocus = document.activeElement;
+    setPageInert(true);
     backdropEl.classList.add('open');
     editEl.classList.add('open');
     editEl.setAttribute('aria-hidden', 'false');
@@ -682,6 +711,7 @@ function buildSheet() {
     sheetEl.setAttribute('aria-modal', 'true');
     sheetEl.setAttribute('aria-labelledby', 'ff-sheet-title');
     sheetEl.setAttribute('aria-hidden', 'true');
+    sheetEl.inert = true;
     sheetEl.innerHTML = `
       <div class="ff-sheet-handle"></div>
       <header class="ff-sheet-head">
