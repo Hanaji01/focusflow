@@ -385,6 +385,20 @@ export function moveTask(id, iso) {
         () => { task.date = before; notify(); });
 }
 
+/* Modifica campi del task; changes contiene solo quelli cambiati */
+export function editTask(id, changes) {
+    const task = cache.find((x) => x.id === id);
+    if (!task) return false;
+    if (changes.date && isDayFull(changes.date)) { toast(DAY_FULL); return false; }
+    const before = Object.fromEntries(Object.keys(changes).map((k) => [k, task[k]]));
+    Object.assign(task, changes);
+    notify();
+    persistChange(
+        () => http('PATCH', `/tasks/${id}`, changes),
+        () => { Object.assign(task, before); notify(); });
+    return true;
+}
+
 export function removeTask(id) {
     const index = cache.findIndex((x) => x.id === id);
     if (index < 0) return;
@@ -410,6 +424,8 @@ export function taskCardHTML(t, { showDate = false, readOnly = false } = {}) {
            </ul>`
         : '';
     const date = showDate ? `<span>${shortDate(t.date)}</span>` : '';
+    // I task completati restano fissi: fanno parte del fiore della loro giornata
+    const edit = t.done ? '' : `<button class="task-edit" type="button" data-edit="${t.id}" aria-label="Modifica ${esc(t.title)}">${ICONS.edit}</button>`;
     return `
       <article class="task ${t.done ? 'done' : ''}" data-cat="${t.category}" data-id="${t.id}">
         <button class="task-check" type="button" data-check="${t.id}" ${lock} aria-label="${t.done ? 'Segna come da fare' : 'Segna come completato'}">${ICONS.check}</button>
@@ -422,6 +438,7 @@ export function taskCardHTML(t, { showDate = false, readOnly = false } = {}) {
           </div>
           ${subs}
         </div>
+        ${edit}
       </article>`;
 }
 
@@ -430,6 +447,8 @@ export function wireTaskList(root) {
     root.addEventListener('click', (e) => {
         const check = e.target.closest('[data-check]');
         if (check) { toggleTask(check.dataset.check); return; }
+        const edit = e.target.closest('[data-edit]');
+        if (edit) { openEdit(edit.dataset.edit); return; }
         const tog = e.target.closest('[data-toggle-subs]');
         if (tog) {
             const list = root.querySelector(`[data-subs="${tog.dataset.toggleSubs}"]`);
@@ -460,6 +479,7 @@ export const ICONS = {
     giardino: svg('<path d="M12 22v-7"/><path d="M8 15h8a4.5 4.5 0 0 0 1.2-8.8A5.5 5.5 0 0 0 7 5.6 4.6 4.6 0 0 0 8 15z"/>'),
     check: svg('<path d="M5 12.5l4.5 4.5L19 7.5"/>', 3),
     close: svg('<path d="M6 6l12 12M18 6L6 18"/>'),
+    edit: svg('<path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13 7l4 4"/>'),
     spark: svg('<path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2L12 3z"/>')
 };
 
@@ -540,6 +560,14 @@ async function suggestSubtasks(title) {
 let sheetEl = null;
 let backdropEl = null;
 let drafts = [];
+let editEl = null;
+let editingId = null;
+
+const options = (items, selected) => items
+    .map(([value, text]) => `<option value="${value}" ${value === selected ? 'selected' : ''}>${text}</option>`).join('');
+const CATEGORY_OPTIONS = Object.entries(CATEGORIES).map(([k, v]) => [k, v.label]);
+const PRIORITY_OPTIONS = PRIORITIES.map((p) => [p, p]);
+const TYPE_OPTIONS = [['evento', 'Evento'], ['scadenza', 'Scadenza']];
 
 export function openSheet() {
     if (!sheetEl) return;
@@ -557,6 +585,30 @@ export function closeSheet() {
     backdropEl.classList.remove('open');
     sheetEl.classList.remove('open');
     sheetEl.setAttribute('aria-hidden', 'true');
+    if (editEl) {
+        editEl.classList.remove('open');
+        editEl.setAttribute('aria-hidden', 'true');
+        editEl.inert = true;
+        editingId = null;
+    }
+}
+
+export function openEdit(id) {
+    const t = cache.find((x) => x.id === id);
+    if (!t || !editEl) return;
+    editingId = id;
+    const q = (sel) => editEl.querySelector(sel);
+    q('.ed-title').value = t.title;
+    q('.ed-cat').innerHTML = options(CATEGORY_OPTIONS, t.category);
+    q('.ed-prio').innerHTML = options(PRIORITY_OPTIONS, t.priority);
+    q('.ed-type').innerHTML = options(TYPE_OPTIONS, t.type);
+    q('.ed-date').value = t.date;
+    q('[data-save]').disabled = false;
+    backdropEl.classList.add('open');
+    editEl.classList.add('open');
+    editEl.setAttribute('aria-hidden', 'false');
+    editEl.inert = false;
+    q('.ed-title').focus();
 }
 
 /* Stato del modello sul dispositivo, mostrato in fondo al pannello */
@@ -625,14 +677,8 @@ function buildSheet() {
         confirmBtn.textContent = n === 1 ? 'Aggiungi 1 task' : `Aggiungi ${n} task`;
     };
 
-    const options = (items, selected) => items
-        .map(([value, text]) => `<option value="${value}" ${value === selected ? 'selected' : ''}>${text}</option>`).join('');
-
     function renderReview(items) {
         drafts = items;
-        const cats = Object.entries(CATEGORIES).map(([k, v]) => [k, v.label]);
-        const prios = PRIORITIES.map((p) => [p, p]);
-        const types = [['evento', 'Evento'], ['scadenza', 'Scadenza']];
         list.innerHTML = items.map((d, i) => `
           <li class="rv-item" data-i="${i}">
             <div class="rv-head">
@@ -640,9 +686,9 @@ function buildSheet() {
               <input class="rv-title" type="text" value="${esc(d.title)}" aria-label="Titolo del task">
             </div>
             <div class="rv-fields">
-              <select class="rv-cat" aria-label="Categoria">${options(cats, d.category)}</select>
-              <select class="rv-prio" aria-label="Priorità">${options(prios, d.priority)}</select>
-              <select class="rv-type" aria-label="Tipo">${options(types, d.type)}</select>
+              <select class="rv-cat" aria-label="Categoria">${options(CATEGORY_OPTIONS, d.category)}</select>
+              <select class="rv-prio" aria-label="Priorità">${options(PRIORITY_OPTIONS, d.priority)}</select>
+              <select class="rv-type" aria-label="Tipo">${options(TYPE_OPTIONS, d.type)}</select>
               <input class="rv-date" type="date" value="${d.date}" aria-label="Data">
             </div>
             <button class="rv-sub-btn" type="button">+ Suggerisci sotto-attività</button>
@@ -724,6 +770,62 @@ function buildSheet() {
     });
 }
 
+function buildEditSheet() {
+    editEl = document.createElement('section');
+    editEl.className = 'ff-sheet';
+    editEl.setAttribute('role', 'dialog');
+    editEl.setAttribute('aria-modal', 'true');
+    editEl.setAttribute('aria-labelledby', 'ff-edit-title');
+    editEl.setAttribute('aria-hidden', 'true');
+    editEl.inert = true;
+    editEl.innerHTML = `
+      <div class="ff-sheet-handle"></div>
+      <header class="ff-sheet-head">
+        <h2 id="ff-edit-title">Modifica task</h2>
+        <button class="ff-icon-btn" type="button" data-close aria-label="Chiudi">${ICONS.close}</button>
+      </header>
+      <label class="ed-field"><span>Titolo</span><input class="ed-title" type="text" maxlength="200"></label>
+      <div class="ed-grid">
+        <label class="ed-field"><span>Categoria</span><select class="ed-cat"></select></label>
+        <label class="ed-field"><span>Priorità</span><select class="ed-prio"></select></label>
+        <label class="ed-field"><span>Tipo</span><select class="ed-type"></select></label>
+        <label class="ed-field"><span>Data</span><input class="ed-date" type="date"></label>
+      </div>
+      <div class="rv-actions">
+        <button class="btn ghost" type="button" data-delete>Elimina</button>
+        <button class="btn" type="button" data-save>Salva</button>
+      </div>`;
+    document.body.append(editEl);
+
+    const q = (sel) => editEl.querySelector(sel);
+    const title = q('.ed-title');
+    const date = q('.ed-date');
+    const validate = () => { q('[data-save]').disabled = !title.value.trim() || !date.value; };
+
+    q('[data-close]').addEventListener('click', closeSheet);
+    title.addEventListener('input', validate);
+    date.addEventListener('input', validate);
+
+    q('[data-save]').addEventListener('click', () => {
+        const task = cache.find((x) => x.id === editingId);
+        if (!task) return;
+        const values = {
+            title: title.value.replace(/\s+/g, ' ').trim(),
+            category: q('.ed-cat').value,
+            priority: q('.ed-prio').value,
+            type: q('.ed-type').value,
+            date: date.value
+        };
+        const changes = Object.fromEntries(Object.entries(values).filter(([k, v]) => v !== task[k]));
+        if (Object.keys(changes).length === 0 || editTask(editingId, changes)) closeSheet();
+    });
+
+    q('[data-delete]').addEventListener('click', () => {
+        const task = cache.find((x) => x.id === editingId);
+        if (task && confirm(`Eliminare "${task.title}"?`)) { removeTask(task.id); closeSheet(); }
+    });
+}
+
 export function mountNav(active) {
     const link = (key, text, href) =>
         `<a href="${href}" ${active === key ? 'aria-current="page"' : ''}>${ICONS[key]}<span>${text}</span></a>`;
@@ -740,5 +842,6 @@ export function mountNav(active) {
     document.body.appendChild(nav);
 
     buildSheet();
+    buildEditSheet();
     nav.querySelector('.ff-fab').addEventListener('click', openSheet);
 }

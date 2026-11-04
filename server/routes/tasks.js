@@ -96,6 +96,7 @@ tasksRouter.patch('/:id', async (req, res) => {
   if ('title' in b) { sets.push('title = ?'); args.push(cleanText(b.title, 'Titolo')); }
   if ('category' in b) { sets.push('category = ?'); args.push(oneOf(b.category, CATEGORIES, 'Categoria')); }
   if ('priority' in b) { sets.push('priority = ?'); args.push(oneOf(b.priority, PRIORITIES, 'Priorità')); }
+  if ('type' in b) { sets.push('task_type = ?'); args.push(oneOf(b.type, TYPES, 'Tipo')); }
   if ('done' in b) {
     if (typeof b.done !== 'boolean') throw httpError(400, 'Valore "done" non valido');
     sets.push('done = ?', 'done_on = ?');

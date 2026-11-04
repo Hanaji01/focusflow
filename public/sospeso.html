@@ -66,6 +66,7 @@
                   </div>
                   <div class="task-actions">
                     <button type="button" data-other="${t.id}">Altro giorno</button>
+                    <button type="button" data-edit="${t.id}">Modifica</button>
                     <button type="button" class="danger" data-delete="${t.id}">Elimina</button>
                   </div>
                 </div>
@@ -95,9 +96,10 @@
         listEl.addEventListener('click', (e) => {
             const btn = e.target.closest('button');
             if (!btn) return;
-            const { check, today: toToday, other, delete: del } = btn.dataset;
+            const { check, today: toToday, other, edit, delete: del } = btn.dataset;
             if (check) FF.toggleTask(check);
             else if (toToday) FF.moveTask(toToday, today);
+            else if (edit) FF.openEdit(edit);
             else if (other) {
                 movingId = other;
                 picker.value = '';

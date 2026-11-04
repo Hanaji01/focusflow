@@ -133,6 +133,13 @@ body {
 .task.done .task-check { background: var(--cat); }
 .task.done .task-check svg { opacity: 1; }
 
+.task-edit {
+    flex: none; width: 32px; height: 32px; margin: -5px -6px -5px 0; padding: 0;
+    border: 0; border-radius: 50%; background: transparent; color: var(--muted);
+    cursor: pointer; display: grid; place-items: center;
+}
+.task-edit svg { width: 16px; height: 16px; }
+
 .task-body { min-width: 0; flex: 1; }
 .task-title { font-size: 15px; font-weight: 500; line-height: 1.3; overflow-wrap: anywhere; }
 .task.done .task-title { text-decoration: line-through; font-weight: 600; }
@@ -282,6 +289,16 @@ body {
 .rv-actions { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-top: 14px; }
 
 .ff-ai-status { min-height: 16px; margin: 10px 0 0; font-size: 11px; color: var(--muted); text-align: center; }
+
+/* ---------- Pannello "Modifica task" ---------- */
+.ed-field { display: block; margin-top: 12px; }
+.ed-field span { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+.ed-field input, .ed-field select {
+    width: 100%; font: inherit; font-size: 14px; color: var(--ink);
+    background: #F4F1EC; border: 2px solid transparent; border-radius: 10px; padding: 9px 10px;
+}
+.ed-field input:focus, .ed-field select:focus { outline: none; border-color: var(--accent); background: #fff; }
+.ed-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; }
 
 /* ---------- Avviso fisso in cima alla pagina ---------- */
 .ff-banner {
