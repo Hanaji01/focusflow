@@ -3,11 +3,12 @@ import * as FF from '../app.js';
 window.FF = FF;
 await FF.boot('giardino');
 
-const SPACING = 48;     // distanza tra un fiore e l'altro
+const SPACING = 64;     // distanza tra un fiore e l'altro
 const PADDING = 26;     // margine ai lati della striscia
 const ROW_H = 140;      // altezza di una striscia con i suoi fiori
 const STRIP_TOP = 108;  // y della fascia d'erba dentro la striscia
 const STRIP_H = 30;
+const FLOWER_RATIO = 192 / 240;  // larghezza / altezza dei disegni
 
 const meadow = document.getElementById('meadow');
 
@@ -18,21 +19,10 @@ function hash(str) {
     return (h >>> 0) / 4294967295;
 }
 
-/* ------------------------------------------------------------
-   Disegno del fiore — punto unico da sostituire con la tua grafica.
-   (x, y) = base dello stelo; stemH = altezza; petals = numero di petali.
-   ------------------------------------------------------------ */
-function drawFlower(x, y, stemH, petals) {
-    if (FF.ART_READY) {
-        const size = 46;
-        return `<image href="${FF.flowerArt(petals)}" x="${x - size / 2}" y="${y - size}" width="${size}" height="${size}"/>`;
-    }
-    const hy = y - stemH;
-    return `
-      <g>
-        <line x1="${x}" y1="${y}" x2="${x}" y2="${hy}" stroke="#90A970" stroke-width="3"/>
-        ${FF.flowerHead(x, hy, petals)}
-      </g>`;
+/* Fiore disegnato: (x, y) è la base dello stelo */
+function drawFlower(x, y, height, petals) {
+    const width = height * FLOWER_RATIO;
+    return `<image href="${FF.flowerArt(petals)}" x="${(x - width / 2).toFixed(1)}" y="${(y - height).toFixed(1)}" width="${width.toFixed(1)}" height="${height.toFixed(1)}"/>`;
 }
 
 function grass(width, key) {
@@ -52,7 +42,7 @@ function strip(days, key, label) {
     const width = Math.max(meadow.clientWidth, content);
     const first = (width - (days.length - 1) * SPACING) / 2;
     const flowers = days.map((day, i) =>
-        drawFlower(first + i * SPACING, STRIP_TOP + 4, 34 + hash(day.date) * 44, day.tasks.length)).join('');
+        drawFlower(first + i * SPACING, STRIP_TOP + 4, 66 + hash(day.date) * 16, day.tasks.length)).join('');
     // l'erba viene disegnata prima dei fiori: gli steli restano davanti
     return `<div class="month-strip" tabindex="0" role="img" aria-label="${label}">
               <svg width="${width}" height="${ROW_H}" viewBox="0 0 ${width} ${ROW_H}" aria-hidden="true">${grass(width, key)}${flowers}</svg>
@@ -74,7 +64,8 @@ function scene(days) {
         months.get(month).push(day);
     }
     return [...months].reverse().map(([month, group]) => {
-        const count = `${group.length} ${group.length === 1 ? 'fiore' : 'fiori'}`;
+        const bloomed = group.filter((day) => day.tasks.length > 0).length;
+        const count = `${bloomed} ${bloomed === 1 ? 'fiorito' : 'fioriti'} su ${group.length}`;
         const title = monthTitle(month);
         return `<h2 class="month-title">${title} · ${count}</h2>${strip(group, month, `${title}: ${count}`)}`;
     }).join('');
@@ -83,15 +74,15 @@ function scene(days) {
 function render() {
     const tasks = FF.getTasks();
     const done = tasks.filter((t) => t.done);
-    const days = FF.flowers();
+    const bloomed = FF.flowers().length;
 
-    document.getElementById('n-flowers').textContent = days.length;
+    document.getElementById('n-flowers').textContent = bloomed;
     document.getElementById('n-done').textContent = done.length;
     document.getElementById('n-total').textContent = tasks.length;
-    meadow.innerHTML = scene(days);
+    meadow.innerHTML = scene(FF.gardenDays());
     // ogni prato si apre sui fiori più recenti
     meadow.querySelectorAll('.month-strip').forEach((el) => { el.scrollLeft = el.scrollWidth; });
-    document.getElementById('note').hidden = days.length > 0;
+    document.getElementById('note').hidden = bloomed > 0;
 }
 
 window.addEventListener('ff:change', render);

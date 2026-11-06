@@ -53,9 +53,8 @@ Dalla cartella principale, senza server né database: `npm test`.
 Con il server acceso e MySQL attivo: `npm run test:api` e `npm run test:security` (variabile `API_URL`, predefinita `http://localhost:3000`). Le prove di sicurezza vanno lanciate su un server appena avviato: fanno scattare i limiti ai tentativi.
 
 ## Disegni
-Fiori e gattino vanno in `public/assets/`: `fiore-1.png` ... `fiore-8.png` (uno per numero di petali) e `gattino.png`.
-PNG con sfondo trasparente: fiori 1024×1024 con lo stelo dritto, centrato e appoggiato al bordo inferiore; gattino largo 1024, rivolto a destra, con la bocca libera.
-Quando ci sono tutti, impostare `ART_READY = true` in `public/js/app.js`.
+Fiori e gattino sono in `public/assets/`: `fiore-0.png` ... `fiore-8.png` (il numero indica i petali colorati; il fiore bianco segna i giorni passati con task previsti e nessuno completato) e `gattino.png`.
+Hanno lo sfondo trasparente e il fiore si sovrappone esattamente a quello in mano al gattino.
 
 ## Note
 - Il modello AI (Qwen2.5-0.5B, ~780 MB) è facoltativo: si scarica solo con "Attiva IA avanzata" nel pannello "Nuovo task" e resta nella cache del browser, finché non lo disattivi. Senza modello l'analisi usa le regole di base.

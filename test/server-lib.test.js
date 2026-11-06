@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { isISODate, cleanText, oneOf, idParam, addDays } from '../server/routes/lib/validate.js';
 import { createLimiter } from '../server/routes/lib/limit.js';
-import { addDaysISO, fromISO, toISO } from '../public/js/dates.js';
+import { addBareDays, addDaysISO, fromISO, toISO } from '../public/js/dates.js';
 
 test('isISODate scarta le date impossibili', () => {
   assert.equal(isISODate('2026-02-28'), true);
@@ -30,6 +30,22 @@ test('le date di server e client coincidono, anche a cavallo di mese e anno', ()
     assert.equal(addDays(iso, n), addDaysISO(iso, n));
   }
   assert.equal(toISO(fromISO('2026-11-04')), '2026-11-04');
+});
+
+test('il fiore bianco segna solo i giorni con task previsti e nessuno completato', () => {
+  const fiorito = { date: '2026-10-31', tasks: [{}] };
+  const tasks = [
+    { date: '2026-10-29', done: false, doneOn: null },            // mancato
+    { date: '2026-10-29', done: false, doneOn: null },            // stesso giorno: un solo fiore
+    { date: '2026-10-30', done: true, doneOn: '2026-11-01' },     // finito in ritardo: giorno mancato
+    { date: '2026-10-31', done: false, doneOn: null },            // il giorno ha già un fiore
+    { date: '2026-11-03', done: true, doneOn: '2026-10-31' },     // finito in anticipo: non è mancato
+    { date: '2026-11-05', done: false, doneOn: null }             // oggi: la giornata non è finita
+  ];
+  const giorni = addBareDays([fiorito], tasks, '2026-11-05');
+  assert.deepEqual(giorni.map((d) => [d.date, d.tasks.length]),
+    [['2026-10-29', 0], ['2026-10-30', 0], ['2026-10-31', 1]]);
+  assert.deepEqual(addBareDays([], [], '2026-11-05'), []);
 });
 
 test('il limitatore blocca oltre il massimo e si azzera', () => {

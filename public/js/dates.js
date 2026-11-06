@@ -11,6 +11,15 @@ export function fromISO(iso) {
     return new Date(y, m - 1, d);
 }
 export const todayISO = () => toISO(new Date());
+/* Aggiunge i giorni passati con task previsti ma nessuno completato (tasks vuoto).
+   I giorni liberi restano senza fiore; un task finito in anticipo non conta come mancato. */
+export function addBareDays(days, tasks, today) {
+    const known = new Set(days.map((d) => d.date));
+    const missed = tasks.filter((t) => t.date < today && !known.has(t.date) && (!t.done || t.doneOn > t.date));
+    const bare = [...new Set(missed.map((t) => t.date))].map((date) => ({ date, tasks: [] }));
+    return [...days, ...bare].sort((a, b) => a.date.localeCompare(b.date));
+}
+
 export function addDaysISO(iso, n) {
     const d = fromISO(iso);
     d.setDate(d.getDate() + n);

@@ -4,7 +4,7 @@
    - barra di navigazione e pannello "Nuovo task"
    Uso negli script delle pagine (public/js/pages):  import * as FF from "../app.js"; */
 
-import { todayISO, addDaysISO, shortDate } from './dates.js';
+import { todayISO, addDaysISO, addBareDays, shortDate } from './dates.js';
 export * from './dates.js';
 
 export const PRIORITIES = ['alta', 'media', 'bassa'];
@@ -262,7 +262,7 @@ function checkLocalDelivery() {
     showCat();
 }
 
-/* Il gattino arriva con in bocca il fiore di oggi */
+/* Il gattino arriva con in mano il fiore di oggi: i disegni sono allineati e si sovrappongono */
 function showCat() {
     if (document.querySelector('.ff-cat')) return;
     const today = flowers().find((f) => f.date === todayISO());
@@ -270,25 +270,8 @@ function showCat() {
     const el = document.createElement('div');
     el.className = 'ff-cat';
     el.setAttribute('role', 'status');
-    const cat = ART_READY
-        ? `<span class="ff-cat-art" aria-hidden="true"><img src="../assets/gattino.png" alt=""><img src="${flowerArt(petals || 1)}" alt=""></span>`
-        : `
-      <svg viewBox="0 0 120 84" aria-hidden="true">
-        <path d="M24 52c-14-4-18-18-10-27" fill="none" stroke="var(--gold)" stroke-width="7" stroke-linecap="round"/>
-        <g class="ff-cat-legs" stroke="var(--gold)" stroke-width="7" stroke-linecap="round">
-          <path d="M34 62v14"/><path d="M46 62v14"/><path d="M62 62v14"/><path d="M74 62v14"/>
-        </g>
-        <ellipse cx="52" cy="52" rx="32" ry="17" fill="var(--gold)"/>
-        <path d="M71 28l2-15 11 9zM95 22l11-9 2 15z" fill="var(--gold)"/>
-        <circle cx="89" cy="36" r="18" fill="var(--gold)"/>
-        <circle cx="84" cy="33" r="2" fill="var(--ink)"/>
-        <circle cx="96" cy="33" r="2" fill="var(--ink)"/>
-        <path d="M90 39l-2 3M90 39l2 3" stroke="var(--ink)" stroke-width="1.5" stroke-linecap="round"/>
-        <path d="M91 43L108 22" stroke="#90A970" stroke-width="2.5" stroke-linecap="round"/>
-        ${flowerHead(108, 22, petals)}
-      </svg>`;
     el.innerHTML = `
-      ${cat}
+      <span class="ff-cat-art" aria-hidden="true"><img src="../assets/gattino.png" alt=""><img src="${flowerArt(petals)}" alt=""></span>
       <p><strong>Consegna speciale!</strong>Hai finito tutto: il fiore di oggi è nel tuo giardino.</p>
       <button type="button">Grazie</button>`;
     el.querySelector('button').addEventListener('click', () => el.remove());
@@ -325,21 +308,11 @@ export function flowers() {
         .map(([date, tasks]) => ({ date, tasks: tasks.slice(0, MAX_TASKS_PER_DAY) }));
 }
 
-/* Disegni in public/assets: fiore-1.png ... fiore-8.png e gattino.png.
-   Da mettere a true quando ci sono tutti; fino ad allora si usano i segnaposto disegnati qui. */
-export const ART_READY = false;
+/* Disegni in public/assets: fiore-N.png ha N petali colorati su otto */
 export const flowerArt = (n) => `../assets/fiore-${Math.min(n, MAX_TASKS_PER_DAY)}.png`;
 
-/* Corolla del fiore: n petali dall'alto in senso orario, con i colori della palette a rotazione */
-const PETAL_COLORS = ['--rose', '--lav', '--gold', '--blue', '--coral', '--green'];
-
-export function flowerHead(x, y, n) {
-    const petals = Array.from({ length: n }, (_, i) => {
-        const a = -Math.PI / 2 + (i * 2 * Math.PI) / MAX_TASKS_PER_DAY;
-        return `<circle cx="${(x + Math.cos(a) * 8).toFixed(1)}" cy="${(y + Math.sin(a) * 8).toFixed(1)}" r="4.4" style="fill: var(${PETAL_COLORS[i % PETAL_COLORS.length]})"/>`;
-    }).join('');
-    return `<g fill-opacity="0.92">${petals}</g><circle cx="${x}" cy="${y}" r="3.6" fill="#F5CFDA"/>`;
-}
+/* Giorni del prato: quelli fioriti più quelli con il fiore bianco */
+export const gardenDays = (today = todayISO()) => addBareDays(flowers(), getTasks(), today);
 
 /* Applica subito la modifica all'interfaccia; con il server la salva in seguito e,
    se fallisce, annulla la modifica e avvisa. */
