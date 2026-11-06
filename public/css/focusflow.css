@@ -311,9 +311,6 @@ body {
     font: inherit; font-size: 12px; color: var(--accent); cursor: pointer;
 }
 .rv-sub-btn:disabled { color: var(--muted); cursor: default; }
-.rv-subs { list-style: none; margin: 8px 0 0 28px; padding: 0; display: grid; gap: 6px; }
-.rv-subs label { display: flex; gap: 8px; align-items: center; font-size: 13px; }
-.rv-subs input { accent-color: var(--accent); width: 18px; height: 18px; margin: 0; flex: none; }
 .rv-note { margin: 6px 0 0 28px; font-size: 12px; color: var(--muted); }
 .rv-actions { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-top: 14px; }
 
@@ -327,13 +324,15 @@ body {
 /* ---------- Pannello "Modifica task" ---------- */
 .ed-field { display: block; margin-top: 12px; }
 .ed-field span { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
-.ed-field input, .ed-field select {
+.ed-field input, .ed-field select, .ed-subs input {
     width: 100%; font: inherit; font-size: 14px; color: var(--ink);
     background: #F4F1EC; border: 2px solid transparent; border-radius: 10px; padding: 9px 10px;
 }
-.ed-field input:focus, .ed-field select:focus { outline: none; border-color: var(--accent); background: #fff; }
+.ed-field input:focus, .ed-field select:focus, .ed-subs input:focus { outline: none; border-color: var(--accent); background: #fff; }
 .ed-subs { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 6px; }
 .ed-subs:empty { margin: 0; }
+.rv-subs { margin: 8px 0 8px 28px; }
+.rv-subs:empty { margin: 0; }
 .ed-subs li { display: flex; gap: 6px; align-items: center; }
 .ed-subs input { flex: 1; min-width: 0; }
 .ed-subs .ff-icon-btn { flex: none; }

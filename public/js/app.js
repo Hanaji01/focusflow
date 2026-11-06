@@ -595,7 +595,7 @@ export function closeSheet() {
     (back || document.querySelector('.ff-fab'))?.focus();
 }
 
-/* Riga di una sotto-attività nel pannello di modifica. Le modifiche valgono solo premendo Salva */
+/* Riga modificabile di una sotto-attività, nei pannelli di creazione e di modifica */
 function subtaskRow({ id = '', title = '', done = false } = {}) {
     const li = document.createElement('li');
     li.dataset.id = id;
@@ -615,8 +615,8 @@ function subtaskRow({ id = '', title = '', done = false } = {}) {
     return li;
 }
 
-const syncAddSub = () => {
-    editEl.querySelector('[data-add-sub]').hidden = editEl.querySelector('.ed-subs').children.length >= MAX_SUBTASKS;
+const syncAddSub = (root = editEl) => {
+    root.querySelector('[data-add-sub]').hidden = root.querySelector('.ed-subs').children.length >= MAX_SUBTASKS;
 };
 
 export function openEdit(id) {
@@ -720,8 +720,9 @@ function buildSheet() {
               <select class="rv-prio" aria-label="Priorità">${options(PRIORITY_OPTIONS, d.priority)}</select>
               <input class="rv-date" type="date" value="${d.date}" aria-label="Data">
             </div>
-            <button class="rv-sub-btn" type="button">+ Suggerisci sotto-attività</button>
-            <ul class="rv-subs" hidden></ul>
+            <ul class="ed-subs rv-subs"></ul>
+            <button class="rv-sub-btn" type="button" data-add-sub>+ Aggiungi sotto-attività</button>
+            <button class="rv-sub-btn" type="button" data-suggest>+ Suggerisci sotto-attività</button>
             <p class="rv-note" hidden></p>
           </li>`).join('');
         updateCount();
@@ -758,18 +759,36 @@ function buildSheet() {
     });
 
     list.addEventListener('click', async (e) => {
-        const btn = e.target.closest('.rv-sub-btn');
+        const li = e.target.closest('.rv-item');
+        if (!li) return;
+        const subsList = li.querySelector('.rv-subs');
+        const add = li.querySelector('[data-add-sub]');
+
+        if (e.target.closest('[data-add-sub]')) {
+            const row = subtaskRow();
+            subsList.append(row);
+            syncAddSub(li);
+            row.querySelector('input').focus();
+            return;
+        }
+        const remove = e.target.closest('[data-remove-sub]');
+        if (remove) {
+            remove.closest('li').remove();
+            syncAddSub(li);
+            add.focus();
+            return;
+        }
+
+        const btn = e.target.closest('[data-suggest]');
         if (!btn) return;
-        const li = btn.closest('.rv-item');
         const title = li.querySelector('.rv-title').value.trim();
         if (!title) return;
         btn.disabled = true;
         btn.textContent = 'Cerco suggerimenti…';
         const { items, source } = await suggestSubtasks(title);
-        const subs = li.querySelector('.rv-subs');
-        subs.innerHTML = items
-            .map((s) => `<li><label><input type="checkbox" checked><span>${esc(s)}</span></label></li>`).join('');
-        subs.hidden = false;
+        const room = MAX_SUBTASKS - subsList.children.length;
+        subsList.append(...items.slice(0, room).map((s) => subtaskRow({ title: s })));
+        syncAddSub(li);
         const note = li.querySelector('.rv-note');
         note.hidden = source !== 'base';
         note.textContent = "Suggerimenti generici: l'IA avanzata non è attiva o non è ancora pronta.";
@@ -789,8 +808,8 @@ function buildSheet() {
                     title,
                     priority: li.querySelector('.rv-prio').value,
                     date: li.querySelector('.rv-date').value || drafts[Number(li.dataset.i)].date,
-                    subtasks: [...li.querySelectorAll('.rv-subs input:checked')]
-                        .map((box) => box.parentElement.querySelector('span').textContent)
+                    subtasks: [...li.querySelectorAll('.rv-subs input')]
+                        .map((box) => box.value.replace(/\s+/g, ' ').trim()).filter(Boolean)
                 });
                 li.remove();
             } catch (err) { /* il messaggio è già mostrato da addTask */ }

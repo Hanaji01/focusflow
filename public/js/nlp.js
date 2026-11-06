@@ -21,11 +21,11 @@ const MODEL_DTYPE = 'q4';
 const KEY_MODEL = 'ff_ai_model';
 const MODEL_CACHE = 'transformers-cache';   // cache del browser usata da Transformers.js
 
-/* Tempi massimi (ms) */
+/* Tempi massimi (ms). Sul telefono di prova il modello impiega più di un minuto:
+   meglio dare subito il risultato delle regole che far aspettare l'utente */
 export const limits = {
-    loadingMs: 4000,        // segmentazione mentre il modello si sta ancora caricando
-    readyMs: 25000,         // segmentazione con il modello già pronto
-    breakdownWaitMs: 30000  // sotto-attività: azione esplicita, si aspetta di più
+    segmentMs: 3000,        // divisione del testo in task
+    breakdownMs: 5000       // sotto-attività: azione esplicita, si aspetta un po' di più
 };
 
 /* ============================================================
@@ -234,9 +234,8 @@ export async function segment(text) {
     if (!modelAllowed()) return heuristic;   // il download parte solo con il consenso dell'utente
 
     loadModel().catch(() => {}); // parte o prosegue in background
-    const wait = status.state === 'ready' ? limits.readyMs : limits.loadingMs;
     try {
-        const list = parseList(await generate(SEGMENT_PROMPT, clean, 200, wait));
+        const list = parseList(await generate(SEGMENT_PROMPT, clean, 200, limits.segmentMs));
         const grounded = list.filter((s) => faithful(s, clean));
         if (grounded.length > 0 && grounded.length === list.length && list.length <= 8) {
             lastSegmentSource = 'modello';
@@ -380,8 +379,7 @@ function breakdownTemplate(title) {
 export async function breakdown(title) {
     if (!modelAllowed()) return { items: breakdownTemplate(title), source: 'base' };
     try {
-        const wait = status.state === 'ready' ? limits.readyMs : limits.breakdownWaitMs;
-        const items = parseList(await generate(BREAKDOWN_PROMPT, title, 150, wait)).slice(0, 5);
+        const items = parseList(await generate(BREAKDOWN_PROMPT, title, 150, limits.breakdownMs)).slice(0, 5);
         if (items.length >= 2) return { items, source: 'modello' };
     } catch (err) {
         console.info(`[FocusFlow] sotto-attività con modello di base (${err.message})`);
