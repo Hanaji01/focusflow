@@ -1,12 +1,15 @@
 import 'dotenv/config';
 import mysql from 'mysql2/promise';
 
+// Toglie spazi e a capo finiti nei valori copiati e incollati
+const env = (name) => process.env[name]?.trim();
+
 export const dbConfig = {
-  host: process.env.DB_HOST || '127.0.0.1',
-  port: Number(process.env.DB_PORT || 3306),
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
+  host: env('DB_HOST') || '127.0.0.1',
+  port: Number(env('DB_PORT') || 3306),
+  user: env('DB_USER'),
+  password: env('DB_PASSWORD'),
+  database: env('DB_NAME'),
   // Database online: certificato del servizio, per una connessione cifrata e verificata
   ssl: process.env.DB_CA ? { ca: process.env.DB_CA.split('\\n').join('\n') } : undefined,
   charset: 'utf8mb4',
