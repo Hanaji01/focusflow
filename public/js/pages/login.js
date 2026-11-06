@@ -6,6 +6,9 @@ const submit = document.getElementById('submit-btn');
 const switcher = document.getElementById('switch-mode');
 let registering = false;
 
+// Il download serve solo a chi apre il sito da un telefono Android, non dentro l'app
+document.getElementById('android-link').hidden = window.cordova !== undefined || !/Android/i.test(navigator.userAgent);
+
 function setMode(register) {
     registering = register;
     submit.textContent = register ? 'Crea account' : 'Accedi';

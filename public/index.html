@@ -59,6 +59,8 @@
             display: block; margin: 14px auto 0; background: none; border: 0;
             font: inherit; font-size: 13px; color: var(--accent); cursor: pointer;
         }
+        .android-link { display: block; margin-top: 14px; padding: 12px; text-align: center; font-size: 14px; font-weight: 600; color: var(--accent); }
+        .android-link[hidden] { display: none; }
         .demo-note { margin: 12px 0 0; text-align: center; font-size: 12px; color: var(--muted); }
     </style>
 </head>
@@ -85,6 +87,7 @@
             <button class="btn" type="submit" id="submit-btn">Accedi</button>
             <button class="switch-mode" type="button" id="switch-mode" hidden>Non hai un account? Registrati</button>
         </form>
+        <a class="android-link" id="android-link" href="download/FocusFlow.apk" download hidden>Scarica l'app per Android</a>
         <p class="demo-note" id="demo-note" hidden>Modalità demo: nessun server collegato, i dati restano in questo browser.</p>
     </main>
 

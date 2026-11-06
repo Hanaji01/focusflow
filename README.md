@@ -56,6 +56,7 @@ Con il server acceso e MySQL attivo: `npm run test:api` e `npm run test:security
 ## App Android
 Conversione con Cordova, in una cartella separata: `public/` resta la web app di riferimento.
 L'indirizzo del server è in `public/js/config.js`; l'app vi scrive il proprio e il server deve avere `CORS_ORIGIN=https://localhost`.
+L'APK per il download dal sito è in `public/download/`: va ricompilato e sostituito quando cambia la web app.
 Il promemoria mattutino in Account (`public/js/reminder.js`) compare solo nell'app e usa il plugin `cordova-plugin-local-notification`.
 
 ## Disegni
