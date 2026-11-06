@@ -791,7 +791,7 @@ function buildSheet() {
         syncAddSub(li);
         const note = li.querySelector('.rv-note');
         note.hidden = source !== 'base';
-        note.textContent = "Suggerimenti generici: l'IA avanzata non è attiva o non è ancora pronta.";
+        note.textContent = "Suggerimenti generici: il modello non è attivo o non ha risposto in tempo.";
         btn.hidden = true;
     });
 

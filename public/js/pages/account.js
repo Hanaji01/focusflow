@@ -1,4 +1,5 @@
 import * as FF from '../app.js';
+import { reminderAvailable, reminderSettings, saveReminder } from '../reminder.js';
 
 const passwordForm = document.getElementById('password-form');
 const deleteForm = document.getElementById('delete-form');
@@ -48,3 +49,31 @@ document.getElementById('who').textContent = FF.session.user();
 const real = FF.getMode() === 'api';
 document.getElementById('panels').hidden = !real;
 document.getElementById('demo').hidden = real;
+
+/* Promemoria: solo nell'app Android */
+if (await reminderAvailable()) {
+    const on = document.getElementById('reminder-on');
+    const time = document.getElementById('reminder-time');
+    const error = document.getElementById('reminder-error');
+    const saved = reminderSettings();
+    on.checked = saved.on;
+    time.value = saved.time;
+    time.disabled = !saved.on;
+    document.getElementById('reminder').hidden = false;
+
+    const apply = async () => {
+        error.textContent = '';
+        time.disabled = !on.checked;
+        if (!time.value) return;
+        const allowed = await saveReminder({ on: on.checked, time: time.value });
+        if (!allowed) {
+            on.checked = false;
+            time.disabled = true;
+            error.textContent = 'Per il promemoria servono le notifiche: attivale nelle impostazioni del telefono.';
+        } else if (on.checked) {
+            FF.toast(`Promemoria attivo alle ${time.value}.`);
+        }
+    };
+    on.addEventListener('change', apply);
+    time.addEventListener('change', apply);
+}

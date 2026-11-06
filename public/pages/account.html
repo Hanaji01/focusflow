@@ -14,6 +14,15 @@
 
         <p class="ff-empty" id="demo" hidden>Nella modalità demo non c'è un account da gestire.</p>
 
+        <section id="reminder" hidden>
+            <h2 class="ff-section">Promemoria mattutino</h2>
+            <div class="ff-card">
+                <label class="reminder-on"><input id="reminder-on" type="checkbox"><span>Ricordami di aggiungere i task</span></label>
+                <label class="ed-field"><span>Ora</span><input id="reminder-time" type="time"></label>
+                <p class="ff-form-error" id="reminder-error" role="alert"></p>
+            </div>
+        </section>
+
         <div id="panels" hidden>
             <h2 class="ff-section">Cambia password</h2>
             <form class="ff-card" id="password-form" novalidate>

@@ -53,6 +53,11 @@ dalla cartella `public/` lancia `py -m http.server 8080` e apri http://localhost
 Dalla cartella principale, senza server né database: `npm test`.
 Con il server acceso e MySQL attivo: `npm run test:api` e `npm run test:security` (variabile `API_URL`, predefinita `http://localhost:3000`). Le prove di sicurezza vanno lanciate su un server appena avviato: fanno scattare i limiti ai tentativi.
 
+## App Android
+Conversione con Cordova, in una cartella separata: `public/` resta la web app di riferimento.
+L'indirizzo del server è in `public/js/config.js`; l'app vi scrive il proprio e il server deve avere `CORS_ORIGIN=https://localhost`.
+Il promemoria mattutino in Account (`public/js/reminder.js`) compare solo nell'app e usa il plugin `cordova-plugin-local-notification`.
+
 ## Disegni
 Fiori e gattino sono in `public/assets/`: `fiore-0.png` ... `fiore-8.png` (il numero indica i petali colorati; il fiore bianco segna i giorni passati con task previsti e nessuno completato) e `gattino.png`.
 Hanno lo sfondo trasparente e il fiore si sovrappone esattamente a quello in mano al gattino.
