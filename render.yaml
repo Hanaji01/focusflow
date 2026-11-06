@@ -1,0 +1,33 @@
+# Pubblicazione su Render, piano gratuito. Le voci con sync: false si inseriscono nel sito di Render.
+services:
+  - type: web
+    name: focusflow
+    runtime: node
+    plan: free
+    branch: main
+    buildCommand: npm install
+    startCommand: npm run db:init && npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_CA
+        sync: false
+      - key: DB_USER
+        value: avnadmin
+      - key: DB_NAME
+        value: defaultdb
+      - key: JWT_SECRET
+        generateValue: true
+      - key: TRUST_PROXY
+        value: "1"
+      - key: ALLOW_REGISTER
+        value: "true"
+      - key: CORS_ORIGIN
+        value: https://localhost
