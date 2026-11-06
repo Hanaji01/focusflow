@@ -1,5 +1,5 @@
 /* FocusFlow — modello di testo in un thread separato, così l'interfaccia resta fluida.
-   Usa WebGPU quando c'è, altrimenti WASM. Le richieste vengono eseguite una alla volta.
+   Gira sul processore (WASM): su un telefono con 4 GB di RAM WebGPU fa chiudere la pagina. Le richieste vengono eseguite una alla volta.
    Messaggi in ingresso: { type: 'load', url, model, dtype }, { type: 'generate', id, messages, maxTokens }
    e { type: 'cancel', id }, che toglie dalla coda una richiesta scaduta
    Messaggi in uscita:   progress, ready, failed, result, error */
@@ -21,18 +21,8 @@ async function load({ url, model, dtype }) {
         self.postMessage({ type: 'progress', progress: Math.min(99, Math.round((loaded / total) * 100)) });
     };
 
-    // I file già scaricati restano in cache: il ripiego su WASM non li riscarica
-    const devices = 'gpu' in navigator ? ['webgpu', 'wasm'] : ['wasm'];
-    let failure;
-    for (const device of devices) {
-        try {
-            generator = await pipeline('text-generation', model, { dtype, device, progress_callback });
-            return device;
-        } catch (err) {
-            failure = err;
-        }
-    }
-    throw failure;
+    generator = await pipeline('text-generation', model, { dtype, device: 'wasm', progress_callback });
+    return 'wasm';
 }
 
 async function handle(msg) {

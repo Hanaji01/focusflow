@@ -79,6 +79,30 @@ tasksRouter.post('/', async (req, res) => {
   res.status(201).json(task);
 });
 
+/* Elenco completo delle sotto-attività: id per quelle esistenti, senza id per le nuove */
+async function readSubtasks(taskId, raw) {
+  if (!Array.isArray(raw) || raw.length > MAX_SUBTASKS) throw httpError(400, `Massimo ${MAX_SUBTASKS} sotto-attività`);
+  const [rows] = await pool.execute('SELECT id FROM subtasks WHERE task_id = ?', [taskId]);
+  const known = new Set(rows.map((r) => String(r.id)));
+  const seen = new Set();
+  const list = raw.map((s) => {
+    const id = s && s.id != null ? String(s.id) : null;
+    if (id !== null && (!known.has(id) || seen.has(id))) throw httpError(400, 'Sotto-attività non valida');
+    if (id !== null) seen.add(id);
+    return { id, title: cleanText(s && s.title, 'Sotto-attività') };
+  });
+  return { list, removed: [...known].filter((id) => !seen.has(id)) };
+}
+
+/* Cambia titoli e ordine: quelle già spuntate restano spuntate */
+async function saveSubtasks(conn, taskId, { list, removed }) {
+  for (const id of removed) await conn.execute('DELETE FROM subtasks WHERE id = ? AND task_id = ?', [id, taskId]);
+  for (const [position, s] of list.entries()) {
+    if (s.id) await conn.execute('UPDATE subtasks SET title = ?, position = ? WHERE id = ? AND task_id = ?', [s.title, position, s.id, taskId]);
+    else await conn.execute('INSERT INTO subtasks (task_id, title, position) VALUES (?,?,?)', [taskId, s.title, position]);
+  }
+}
+
 tasksRouter.patch('/:id', async (req, res) => {
   const id = idParam(req.params.id);
   const b = req.body || {};
@@ -101,11 +125,13 @@ tasksRouter.patch('/:id', async (req, res) => {
     newDate = dateField(b.date, 'Data');
     if (newDate !== current.due_date) { sets.push('due_date = ?'); args.push(newDate); } else newDate = null;
   }
-  if (sets.length === 0 && newDate === null) throw httpError(400, 'Nessuna modifica richiesta');
+  const subs = 'subtasks' in b ? await readSubtasks(id, b.subtasks) : null;
+  if (sets.length === 0 && newDate === null && !subs) throw httpError(400, 'Nessuna modifica richiesta');
 
   await withTransaction(async (conn) => {
     if (newDate) await assertDayHasRoom(conn, req.user.id, newDate);
     if (sets.length) await conn.execute(`UPDATE tasks SET ${sets.join(', ')} WHERE id = ? AND user_id = ?`, [...args, id, req.user.id]);
+    if (subs) await saveSubtasks(conn, id, subs);
     if (newDate) {
       await conn.execute(
         'INSERT INTO task_reschedules (task_id, user_id, action, from_date, to_date) VALUES (?,?,?,?,?)',

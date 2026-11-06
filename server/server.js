@@ -34,6 +34,19 @@ const CSP = [
 app.disable('x-powered-by');
 // Dietro un proxy (nginx, Render…): numero di proxy davanti al server, per leggere l'IP vero dei client
 if (process.env.TRUST_PROXY) app.set('trust proxy', Number(process.env.TRUST_PROXY));
+// L'app Android ha le pagine nel telefono: CORS_ORIGIN indica l'origine da cui può chiamare il server
+const CORS_ORIGIN = process.env.CORS_ORIGIN;
+app.use((req, res, next) => {
+  if (!CORS_ORIGIN || req.headers.origin !== CORS_ORIGIN) return next();
+  res.set({
+    'Access-Control-Allow-Origin': CORS_ORIGIN,
+    'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE',
+    Vary: 'Origin'
+  });
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
 app.use(express.json({ limit: '100kb' }));
 app.use((_req, res, next) => {
   res.set({ 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'same-origin', 'Content-Security-Policy': CSP });

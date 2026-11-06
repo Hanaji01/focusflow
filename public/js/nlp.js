@@ -5,7 +5,7 @@
    - Priorità                    regole (il modello zero-shot è previsto in una fase successiva)
    - Sotto-attività              modello, altrimenti modello di testo generico
 
-   Il modello (Qwen2.5-0.5B-Instruct, ~780 MB) si scarica solo se l'utente lo attiva dal pannello
+   Il modello (SmolLM2-135M-Instruct, ~180 MB) si scarica solo se l'utente lo attiva dal pannello
    "Nuovo task", poi resta nella cache del browser. Gira in nlp-worker.js, quindi non blocca
    l'interfaccia: se non è attivo o non è pronto in pochi secondi si usano le regole. */
 
@@ -16,7 +16,7 @@ export function setTracker(fn) { track = fn; }
 
 const CHRONO_URL = 'https://cdn.jsdelivr.net/npm/chrono-node@2.10.1/dist/esm/index.js';
 const TRANSFORMERS_URL = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.1';
-export const MODEL_ID = 'onnx-community/Qwen2.5-0.5B-Instruct';
+export const MODEL_ID = 'onnx-community/SmolLM2-135M-Instruct-ONNX';
 const MODEL_DTYPE = 'q4';
 const KEY_MODEL = 'ff_ai_model';
 const MODEL_CACHE = 'transformers-cache';   // cache del browser usata da Transformers.js

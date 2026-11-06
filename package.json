@@ -8,6 +8,7 @@
     "start": "node server/server.js",
     "db:init": "node server/database/init-db.js",
     "user:create": "node server/database/create-user.js",
+    "user:password": "node server/database/reset-password.js",
     "test": "node --test test/nlp.test.js test/server-lib.test.js",
     "test:api": "node --env-file=.env test/integration/api.mjs",
     "test:security": "node test/integration/security.mjs"

@@ -4,11 +4,13 @@
    - barra di navigazione e pannello "Nuovo task"
    Uso negli script delle pagine (public/js/pages):  import * as FF from "../app.js"; */
 
+import { API_URL } from './config.js';
 import { todayISO, addDaysISO, addBareDays, shortDate } from './dates.js';
 export * from './dates.js';
 
 export const PRIORITIES = ['alta', 'media', 'bassa'];
 export const MAX_TASKS_PER_DAY = 8;   // stesso valore in server/routes/lib/validate.js: un petalo per task
+const MAX_SUBTASKS = 12;              // stesso valore in server/routes/tasks.js
 
 // La pagina di accesso è public/index.html, le altre stanno in public/pages
 export const LOGIN_PAGE = location.pathname.includes('/pages/') ? '../index.html' : 'index.html';
@@ -117,7 +119,7 @@ function flushTelemetry() {
     const events = tQueue.splice(0, 50);
     const token = session.token();
     if (events.length === 0 || !token) return;
-    fetch('/api/telemetry', {
+    fetch(`${API_URL}/telemetry`, {
         method: 'POST',
         keepalive: true,
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -135,7 +137,7 @@ async function http(method, path, body) {
     if (body !== undefined) headers['Content-Type'] = 'application/json';
     if (token) headers.Authorization = `Bearer ${token}`;
 
-    const res = await fetch(`/api${path}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+    const res = await fetch(`${API_URL}${path}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
     const data = res.status === 204 ? null : await res.json().catch(() => null);
 
     if (res.status === 401 && token) {          // sessione scaduta o token non valido
@@ -154,7 +156,7 @@ export function init() {
     if (!initPromise) {
         initPromise = (async () => {
             try {
-                const res = await fetch('/api/health', { cache: 'no-store' });
+                const res = await fetch(`${API_URL}/health`, { cache: 'no-store' });
                 const data = await res.json().catch(() => null);
                 if (res.ok && data && data.ok) mode = 'api';
                 else if (res.status === 503) { mode = 'api'; toast('Il database non è raggiungibile'); }
@@ -400,10 +402,19 @@ export function editTask(id, changes) {
     if (!task) return false;
     if (changes.date && isDayFull(changes.date)) { toast(DAY_FULL); return false; }
     const before = Object.fromEntries(Object.keys(changes).map((k) => [k, task[k]]));
+    const body = { ...changes };
+    if (changes.subtasks) {
+        // al server le nuove arrivano senza id: quello definitivo lo assegna lui
+        body.subtasks = changes.subtasks.map(({ id: subId, title }) => (subId ? { id: subId, title } : { title }));
+        changes = { ...changes, subtasks: changes.subtasks.map((s) => ({ ...s, id: s.id || uid() })) };
+    }
     Object.assign(task, changes);
     notify();
     persistChange(
-        () => http('PATCH', `/tasks/${id}`, changes),
+        async () => {
+            const saved = await http('PATCH', `/tasks/${id}`, body);
+            if (changes.subtasks) { task.subtasks = saved.subtasks; notify(); }
+        },
         () => { Object.assign(task, before); notify(); });
     return true;
 }
@@ -584,6 +595,30 @@ export function closeSheet() {
     (back || document.querySelector('.ff-fab'))?.focus();
 }
 
+/* Riga di una sotto-attività nel pannello di modifica. Le modifiche valgono solo premendo Salva */
+function subtaskRow({ id = '', title = '', done = false } = {}) {
+    const li = document.createElement('li');
+    li.dataset.id = id;
+    li.dataset.done = done ? '1' : '';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.maxLength = 200;
+    input.value = title;
+    input.setAttribute('aria-label', 'Testo della sotto-attività');
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'ff-icon-btn';
+    remove.dataset.removeSub = '';
+    remove.setAttribute('aria-label', 'Togli sotto-attività');
+    remove.innerHTML = ICONS.close;
+    li.append(input, remove);
+    return li;
+}
+
+const syncAddSub = () => {
+    editEl.querySelector('[data-add-sub]').hidden = editEl.querySelector('.ed-subs').children.length >= MAX_SUBTASKS;
+};
+
 export function openEdit(id) {
     const t = cache.find((x) => x.id === id);
     if (!t || !editEl) return;
@@ -592,6 +627,8 @@ export function openEdit(id) {
     q('.ed-title').value = t.title;
     q('.ed-prio').innerHTML = options(PRIORITY_OPTIONS, t.priority);
     q('.ed-date').value = t.date;
+    q('.ed-subs').replaceChildren(...t.subtasks.map((s) => subtaskRow(s)));
+    syncAddSub();
     q('[data-save]').disabled = false;
     lastFocus = document.activeElement;
     setPageInert(true);
@@ -607,7 +644,7 @@ function renderStatus(s) {
     const el = sheetEl && sheetEl.querySelector('.ff-ai-status');
     if (!el) return;
     const action = (name, text) => `<button type="button" data-ai="${name}">${text}</button>`;
-    if (s.state === 'off') el.innerHTML = `${action('on', 'Attiva IA avanzata')}: circa 780 MB da scaricare, meglio in Wi-Fi`;
+    if (s.state === 'off') el.innerHTML = `${action('on', 'Attiva IA avanzata')}: circa 180 MB da scaricare, meglio in Wi-Fi`;
     else if (s.state === 'loading') el.innerHTML = `Modello IA in caricamento… ${s.progress}% ${action('off', 'Annulla')}`;
     else if (s.state === 'failed') el.innerHTML = `Modello IA non disponibile: uso le regole di base. ${action('on', 'Riprova')}`;
     else el.innerHTML = `IA avanzata attiva ${action('off', 'Disattiva')}`;
@@ -786,6 +823,10 @@ function buildEditSheet() {
         <label class="ed-field"><span>Priorità</span><select class="ed-prio"></select></label>
         <label class="ed-field"><span>Data</span><input class="ed-date" type="date"></label>
       </div>
+      <div class="ed-field"><span>Sotto-attività</span>
+        <ul class="ed-subs"></ul>
+        <button class="rv-sub-btn" type="button" data-add-sub>+ Aggiungi sotto-attività</button>
+      </div>
       <div class="rv-actions">
         <button class="btn ghost" type="button" data-delete>Elimina</button>
         <button class="btn" type="button" data-save>Salva</button>
@@ -801,6 +842,20 @@ function buildEditSheet() {
     title.addEventListener('input', validate);
     date.addEventListener('input', validate);
 
+    q('[data-add-sub]').addEventListener('click', () => {
+        const row = subtaskRow();
+        q('.ed-subs').append(row);
+        syncAddSub();
+        row.querySelector('input').focus();
+    });
+    q('.ed-subs').addEventListener('click', (e) => {
+        const remove = e.target.closest('[data-remove-sub]');
+        if (!remove) return;
+        remove.closest('li').remove();
+        syncAddSub();
+        q('[data-add-sub]').focus();
+    });
+
     q('[data-save]').addEventListener('click', () => {
         const task = cache.find((x) => x.id === editingId);
         if (!task) return;
@@ -810,6 +865,12 @@ function buildEditSheet() {
             date: date.value
         };
         const changes = Object.fromEntries(Object.entries(values).filter(([k, v]) => v !== task[k]));
+        // una riga lasciata vuota equivale a toglierla
+        const subs = [...q('.ed-subs').children]
+            .map((li) => ({ id: li.dataset.id, title: li.querySelector('input').value.replace(/\s+/g, ' ').trim(), done: !!li.dataset.done }))
+            .filter((s) => s.title);
+        const shape = (list) => JSON.stringify(list.map((s) => [s.id, s.title]));
+        if (shape(subs) !== shape(task.subtasks)) changes.subtasks = subs;
         if (Object.keys(changes).length === 0 || editTask(editingId, changes)) closeSheet();
     });
 

@@ -88,6 +88,23 @@ ok('lettura fiori', list.length === 1 && list[0].petalsCompleted === 2, JSON.str
 ok('giornata chiusa 409', (await call('PUT', `/flowers/${iso(-5)}/sync`, {}, T)).status === 409);
 ok('giorno futuro 400', (await call('PUT', `/flowers/${iso(5)}/sync`, {}, T)).status === 400);
 
+// Modifica delle sotto-attività
+const st = (await mk('Con sotto-attività', iso(9), { subtasks: ['Uno', 'Due', 'Tre'] })).data;
+const [s1, s2, s3] = st.subtasks;
+await call('PATCH', `/subtasks/${s1.id}`, { done: true }, T);
+let edited = await call('PATCH', `/tasks/${st.id}`, { subtasks: [{ id: s3.id, title: 'Tre rinominata' }, { id: s1.id, title: 'Uno' }, { title: 'Nuova' }] }, T);
+ok('sotto-attività rinominate, riordinate, tolte e aggiunte',
+  edited.status === 200 && edited.data.subtasks.map((s) => s.title).join() === 'Tre rinominata,Uno,Nuova', JSON.stringify(edited));
+ok('la spunta resta dopo la modifica', edited.data.subtasks[1].done === true && edited.data.subtasks[2].done === false);
+ok('sotto-attività tolta sparita', !edited.data.subtasks.some((s) => s.id === s2.id));
+const foreign = (await call('POST', '/tasks', { title: 'Altrui', date: iso(9), created: today, subtasks: ['Sua'] }, T2)).data;
+ok('sotto-attività di un altro task rifiutata',
+  (await call('PATCH', `/tasks/${st.id}`, { subtasks: [{ id: foreign.subtasks[0].id, title: 'Rubata' }] }, T)).status === 400);
+ok('task di un altro utente 404', (await call('PATCH', `/tasks/${foreign.id}`, { subtasks: [] }, T)).status === 404);
+ok('titolo vuoto rifiutato', (await call('PATCH', `/tasks/${st.id}`, { subtasks: [{ title: '   ' }] }, T)).status === 400);
+ok('duplicato rifiutato', (await call('PATCH', `/tasks/${st.id}`, { subtasks: [{ id: s1.id, title: 'A' }, { id: s1.id, title: 'B' }] }, T)).status === 400);
+ok('elenco vuoto toglie tutte', (await call('PATCH', `/tasks/${st.id}`, { subtasks: [] }, T)).data.subtasks.length === 0);
+
 console.log(`\n${pass} superate, ${fail} fallite`);
 await pool.end();
 process.exit(fail ? 1 : 0);

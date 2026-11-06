@@ -332,6 +332,11 @@ body {
     background: #F4F1EC; border: 2px solid transparent; border-radius: 10px; padding: 9px 10px;
 }
 .ed-field input:focus, .ed-field select:focus { outline: none; border-color: var(--accent); background: #fff; }
+.ed-subs { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 6px; }
+.ed-subs:empty { margin: 0; }
+.ed-subs li { display: flex; gap: 6px; align-items: center; }
+.ed-subs input { flex: 1; min-width: 0; }
+.ed-subs .ff-icon-btn { flex: none; }
 .ed-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; }
 
 /* ---------- Il gattino che consegna il fiore ---------- */

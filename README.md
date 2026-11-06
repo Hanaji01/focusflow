@@ -43,6 +43,7 @@ progetto/
 5. Apri http://localhost:3000 — dalla pagina di accesso puoi registrarti.
 
 Per creare un utente da terminale: `npm run user:create -- nome password` (con `ALLOW_REGISTER=false` la registrazione dal sito è chiusa).
+Per cambiare una password dimenticata: `npm run user:password -- nome` (la nuova password si scrive al prompt).
 
 ## Senza server (modalità demo)
 Se il server non risponde, il frontend funziona con dati d'esempio nel browser:
@@ -57,7 +58,7 @@ Fiori e gattino sono in `public/assets/`: `fiore-0.png` ... `fiore-8.png` (il nu
 Hanno lo sfondo trasparente e il fiore si sovrappone esattamente a quello in mano al gattino.
 
 ## Note
-- Il modello AI (Qwen2.5-0.5B, ~780 MB) è facoltativo: si scarica solo con "Attiva IA avanzata" nel pannello "Nuovo task" e resta nella cache del browser, finché non lo disattivi. Senza modello l'analisi usa le regole di base.
+- Il modello AI (SmolLM2-135M, ~180 MB, sul processore) è facoltativo: si scarica solo con "Attiva IA avanzata" nel pannello "Nuovo task" e resta nella cache del browser, finché non lo disattivi. Senza modello l'analisi usa le regole di base.
 - Il fiore del giorno si ricalcola sul server a ogni modifica; le giornate passate sono chiuse (HTTP 409).
 - Ogni giorno nasce un solo fiore, con un petalo per ogni task completato. Tetto di 8 task per data (`MAX_TASKS_PER_DAY` in `server/routes/lib/validate.js` e `public/js/app.js`): oltre, il server risponde 409.
 - Servire il sito in HTTPS se lo si pubblica: il token di accesso viaggia nell'intestazione Authorization.
