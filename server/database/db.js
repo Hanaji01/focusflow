@@ -7,6 +7,8 @@ export const dbConfig = {
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
+  // Database online: certificato del servizio, per una connessione cifrata e verificata
+  ssl: process.env.DB_CA ? { ca: process.env.DB_CA.split('\\n').join('\n') } : undefined,
   charset: 'utf8mb4',
   dateStrings: true,        // le colonne DATE arrivano come 'YYYY-MM-DD', senza conversioni di fuso orario
   waitForConnections: true,
