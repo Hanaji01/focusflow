@@ -1,24 +1,28 @@
 # FocusFlow
 
-A task manager where every day grows a flower: one coloured petal for each task you complete. You type your plans in plain Italian ("domani chiamo il dentista e venerdì consegno la relazione") and the app splits them into tasks with dates and priorities, running the language model on your own device.
+A task manager where every day grows a flower: one coloured petal for each task you complete. You type your plans in plain Italian ("comprare il latte oggi; prenotare la palestra domani; inviare la mail al professore lunedì, importante") and the app turns them into separate tasks with dates and priorities. An optional language model runs on your own device.
 
 Live demo: https://focusflow-tj9t.onrender.com (free hosting, so the first load can take about a minute while the server wakes up). An Android build can be downloaded from the login page.
 
 The interface is in Italian.
 
-[TODO: 2-3 screenshots, e.g. the Today page, the garden and the new-task panel. Put them in `docs/` and link them here.]
+| Today | New task | Garden |
+| --- | --- | --- |
+| <img src="docs/oggi.png" width="240" alt="Today page with tasks, priorities and subtasks"> | <img src="docs/nuovo-task.png" width="240" alt="The sentence above split into three tasks with dates and priorities"> | <img src="docs/giardino.png" width="240" alt="Garden with one flower per day"> |
+
+*Screenshots from demo mode, with the sample data the app creates in the browser.*
 
 ## Why it exists
 
 I built FocusFlow as the third test application for my internship research at the University of Perugia, which compares ways of converting a web app into an Android app (WebView, PWA, Cordova). It was designed to include features that make conversion hard, such as local notifications, heavy assets and, above all, an AI model that runs inside the page.
 
-[TODO: one line in your own words on what you found, e.g. how the on-device model behaved on the test phone.]
+On the test phone (Samsung Galaxy A23, 4 GB RAM) the model ran only on WebAssembly, as the GPU path crashed the page. Answers took between 20 seconds and two minutes, and the low-memory killer sometimes closed the app. In practice the rules give the result and the model is an experiment, which is what the research needed to measure.
 
 ## Features
 
 - **Today, Calendar and Overdue pages.** Tasks have a date, a priority and optional subtasks. Overdue tasks are grouped by priority and can be moved to a new date; every move is recorded.
 - **Garden.** Each day gets one flower with up to 8 petals, one per completed task. A day with planned tasks and none completed gets a white flower. The flower is computed on the server, and past days are locked (HTTP 409), so the garden can't be edited after the fact.
-- **Natural-language input.** The text is split into tasks, dates are parsed with chrono-node plus Italian fallback rules, and priority comes from keyword rules.
+- **Natural-language input.** The rules split the text into tasks at punctuation (`;`, `.`), read dates with chrono-node plus Italian fallback rules ("oggi", "domani", "lunedì") and set the priority from words like "urgente" or "importante". Two tasks joined by "e" in one sentence are not split yet.
 - **On-device AI (optional).** "Attiva IA avanzata" downloads SmolLM2-135M-Instruct (about 180 MB, 4-bit ONNX) through Transformers.js. It runs on WebAssembly in a Web Worker, so the interface never freezes, and stays in the browser cache. Each step has a time limit (3 s to split text, 5 s for subtasks); if the model is slower, the rule-based result is used instead.
 - **Accounts.** Registration, login, password change and account deletion. Passwords are hashed with bcrypt and sessions use JWT.
 - **Demo mode.** If the server can't be reached, the frontend falls back to sample data stored in the browser.
